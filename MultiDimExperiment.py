@@ -8,11 +8,16 @@ class MultiDimExperiment():
         # self.filename = ''
         # self.filetype = ''
 
-        # Experiment information
-        self.ExperimentData = {}
-        # self.experiment_type = ''
-        # self.experiment_name = ''
-        # self.dimensions = [0]
+        # Experimental data only
+        # This is a dataset that stores everything that comes out of the experiment
+        self.ExperimentalData = {}
+        self.ExperimentalData['dimensions'] = [0]
 
         # Experiment Parameters
-        self.ExperimentParameters = {}
+        # This is a group of datasets that stores everything that comes in the experiment
+        # It always includes a key 'Info', which is a dictionary.
+        # Grouping all setup parameters (measurement speed, Rampmode, ...) in
+        # 'Info' allows a simpler saving/reading
+        self.ExperimentalParameters = {}
+        self.ExperimentalParameters['Info'] = {}
+        self.ExperimentalParameters['Info']['dimensions'] = [0]

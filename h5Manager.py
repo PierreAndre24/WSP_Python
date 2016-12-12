@@ -9,14 +9,14 @@ class h5_IO:
 
     def Read_data(self, filepath, filename, XP, group_name, read_multiple_files = False):
         with h5py.File(filepath + os.sep + filename,'r') as f:
-            XP.ExperimentalData['data'] = f.get(group_name + '/ExperimentalData')
+            XP.ExperimentalData['data'] = f.get(group_name + '/ExperimentalData')[:]
             for k in f[group_name]['ExperimentalData'].attrs.keys():
                 XP.ExperimentalData[k] = f[group_name]['ExperimentalData'].attrs[k]
 
     def Read_FastSequence(self, filepath, filename, XP, group_name):
 
         with h5py.File(filepath + os.sep + filename,'r') as f:
-            XP.ExperimentalParameters['Fastsequence'] = f.get(group_name + '/ExperimentalParameters/Fastsequence')
+            XP.ExperimentalParameters['Fastsequence'] = f.get(group_name + '/ExperimentalParameters/Fastsequence')[:]
             for k in f[group_name]['ExperimentalParameters']['Fastsequence'].attrs.keys():
                 XP.ExperimentalParameters['Info'][k] = f[group_name]['ExperimentalParameters']['Fastsequence'].attrs[k]
 

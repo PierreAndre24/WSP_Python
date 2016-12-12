@@ -32,7 +32,7 @@ class LVM_IO:
         # define the conversion function
         convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
         converters = {}
-        for i in range(XP.ExperimentalData['dimensions'][0]):
+        for i in range(XP.ExperimentalData['dimensions'][-1]):
             converters[i+1] = convertfunc
 
         # loading loop
@@ -44,8 +44,10 @@ class LVM_IO:
                                     converters = converters,\
                                     skip_header = self._header_size)
             locdata = locdata[:,-XP.ExperimentalData['dimensions'][0]:]
+            n_points = locdata.shape[0] * locdata.shape[1]
+            locdata = np.reshape(locdata,(n_points))
             final_shape = XP.ExperimentalData['dimensions']
-            XP.ExperimentalData['data'][:,:,:,:,i] = np.reshape(locdata,final_shape[:4])
+            XP.ExperimentalData['data'][:,:,:,:,i] = np.reshape(locdata,tuple(final_shape[:4]),order = 'F')
         # this worked for one file
         # XP.ExperimentalData['data'] = np.genfromtxt(\
         #                             fname = [filepath + os.sep + filename],\
@@ -240,6 +242,7 @@ class LVM_IO:
         # Dimensions
         # The lvm file store the dimensions so that : [sweep, step, step2, step3, #measures]
         # We rotate that list to [#measures, sweep, step, step2, step3]
+        # Then to [step3, step2, step, sweep, #measures]
         property_text = 'expected number of points'
         if self.currentline[0:len(property_text)] == property_text:
             self.currentline = string.split(self.currentline,':')[1]

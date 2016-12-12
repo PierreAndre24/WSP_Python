@@ -83,20 +83,18 @@ class ExperimentFileManager():
         # Create the parameters and data datasets
 
         # ExperimentalData
-        chunkSize = []
-        chunkSize.append(self.XP.ExperimentalData['dimensions'][0])
-        chunkSize.append(self.XP.ExperimentalData['dimensions'][1])
-        if len(self.XP.ExperimentalData['dimensions']) > 2:
-            for i in range(2,len(self.XP.ExperimentalData['dimensions'])):
-                chunkSize.append(1)
+        chunkSize = [1]*len(self.XP.ExperimentalData['dimensions'])
+        chunkSize[0] = self.XP.ExperimentalData['dimensions'][0]
+        chunkSize[1] = self.XP.ExperimentalData['dimensions'][1]
+        #chunkSize[2] = self.XP.ExperimentalData['dimensions'][2]
+
         # ExperimentalDataSet abbreviated as ExpD
         self.ExpDExceptions = []
         self.ExpDExceptions.append('data')
         ExpD = f.create_dataset(\
                 group_name + "/ExperimentalData", \
                 shape = tuple(self.XP.ExperimentalData['dimensions']), \
-                chunks = tuple(chunkSize),\
-                #chunks = (1,402,1,1,1),\
+                chunks = True,\
                 compression = self.compression_type, \
                 compression_opts = self.compression_level)
         ExpD[:] = self.XP.ExperimentalData['data']
@@ -127,7 +125,7 @@ class ExperimentFileManager():
         # Start with the dictionaries and DS
         self.ExpPInfoExceptions = []
         # Save the Fastsequence as a dataset to be more or less in agreement with the labview 1.13 h5 version
-        chunkSize = [len(XP.ExperimentalParameters['Fastsequence']), 3]
+        chunkSize = [len(self.XP.ExperimentalParameters['Fastsequence']), 3]
         ExpPFastS = f.create_dataset(\
                 group_name + "/ExperimentalParameters/Fastsequence", \
                 tuple(chunkSize), \

@@ -16,8 +16,14 @@ class ExperimentFileManager():
                              read_fstsq = False):
         if filename[-3:] == 'lvm':
             self.CurrentFileIO = LVMManager.LVM_IO(read_fstsq)
+
+            # read the main file
             filepathname = filepath + os.sep + filename
             self.CurrentFileIO.Read_header(filepathname, self.XP)
+            self.CurrentFileIO.Read_data(filepathname, self.XP)
+            #self.CurrentFileIO._lvm_confirm_scan_dimensions(filepathname, self.XP)
+
+            # read the fast sequence file if it exists
             filepathname = filepath + os.sep + filename[:-3] + 'fstsq'
             self.CurrentFileIO.Read_FastSequence(filepathname, self.XP)
 
@@ -51,18 +57,31 @@ class ExperimentFileManager():
         # Create the parameters and data datasets
 
         # ExperimentalData
-        chunkSize = self.XP.ExperimentalData['dimensions']
-        if len(chunkSize) > 2:
-            for i in range(2,len(chunkSize)):
-                chunkSize[i] = 1
-        ExperimentalData = f.create_dataset(\
+        chunkSize = []
+        chunkSize.append(self.XP.ExperimentalData['dimensions'][0])
+        chunkSize.append(self.XP.ExperimentalData['dimensions'][1])
+        if len(self.XP.ExperimentalData['dimensions']) > 2:
+            for i in range(2,len(self.XP.ExperimentalData['dimensions'])):
+                chunkSize.append(1)
+        # ExperimentalDataSet abbreviated as ExpD
+        self.ExpDExceptions = []
+        self.ExpDExceptions.append('data')
+        ExpD = f.create_dataset(\
                 group_name + "/ExperimentalData", \
-                tuple(chunkSize), \
+                shape = tuple(self.XP.ExperimentalData['dimensions']), \
+                chunks = tuple(chunkSize),\
+                #chunks = (1,402,1,1,1),\
                 compression = self.compression_type, \
                 compression_opts = self.compression_level)
+        ExpD[:] = self.XP.ExperimentalData['data']
 
-        # ExperimentalParameters
-        subgroup_ep = f.create_group(group_name + '/ExperimentalParameters')
+        # Save the Info entries as attributes of the data
+        for e in self.XP.ExperimentalData.keys():
+            if e not in self.ExpDExceptions:
+                ExpD.attrs[e] = self.XP.ExperimentalData[e]
+
+        # ExperimentalParameters group as ExpP
+        ExpP = f.create_group(group_name + '/ExperimentalParameters')
         # chunkSize = self.XP.ExperimentalParameters['Info']['dimensions']
         # if len(chunkSize) > 2:
         #     for i in range(2,len(chunkSize)):
@@ -77,25 +96,34 @@ class ExperimentFileManager():
         for e in self.XP.FileInfo.keys():
             group.attrs[e] = self.XP.FileInfo[e]
 
-        # Write the Info entries as attributes of the group "Parameters"
-        # Start with the dictionaries
-        # Build the list of dictionaries not to take into account for the loop saving
-        self._dict_list_ep = []
+        # Write the Info entries as attributes of the group "ExperimentalParameters"
+
+        # Start with the dictionaries and DS
+        self.ExpPInfoExceptions = []
+        # Save the Fastsequence as a dataset to be more or less in agreement with the labview 1.13 h5 version
+        chunkSize = [len(XP.ExperimentalParameters['Fastsequence']), 3]
+        ExpPFastS = f.create_dataset(\
+                group_name + "/ExperimentalParameters/Fastsequence", \
+                tuple(chunkSize), \
+                compression = self.compression_type, \
+                compression_opts = self.compression_level)
+        ExpPFastS[:] = np.asarray(self.XP.ExperimentalParameters['Fastsequence'])
+
         # Save the Fastchannels dictionary
         if 'Fastchannels' in self.XP.ExperimentalParameters['Info'].keys():
-            self._dict_list_ep.append('Fastchannels')
             Fastchannels = []
+            self.ExpPInfoExceptions.append('Fastchannels')
             for e in self.XP.ExperimentalParameters['Info']['Fastchannels']:
                 index = e
                 DAC_column = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][0]
                 DAC_row = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][1]
                 Fastchannels.append([index,DAC_column,DAC_row])
-            print np.asarray(Fastchannels)
-            subgroup_ep.attrs['Fastchannels'] = np.asarray(Fastchannels)
+            ExpPFastS.attrs['Fastchannels'] = np.asarray(Fastchannels)
 
+        # Save the rest
         for e in self.XP.ExperimentalParameters['Info'].keys():
-            if e not in self._dict_list_ep:
-                subgroup_ep.attrs[e] = self.XP.ExperimentalParameters['Info'][e]
+            if e not in self.ExpPInfoExceptions:
+                ExpP.attrs[e] = self.XP.ExperimentalParameters['Info'][e]
 
 
 

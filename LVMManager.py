@@ -4,6 +4,7 @@ import numpy as np
 
 class LVM_IO:
 
+
     def __init__(self, read_fstsq = False):
         # self.expected_header = [ \
         #     [,'fileversion']], \
@@ -20,6 +21,23 @@ class LVM_IO:
         self.Fastchannels_number_of_lines = 16
         self.FLAG_end_of_Fastsequence = False
 
+    def Read_data(self, filepathname, XP):
+        # Correct the dimensions
+        self._lvm_confirm_scan_dimensions(filepathname, XP)
+        # initialize the data array
+        #convertfunc = lambda x: float(x.strip("%"))
+        convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
+
+        XP.ExperimentalData['data'] = np.genfromtxt(\
+                                    fname = filepathname,\
+                                    comments = '#',\
+                                    converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
+                                    skip_header = self._header_size)
+        XP.ExperimentalData['data'] = XP.ExperimentalData['data'][:,-XP.ExperimentalData['dimensions'][0]:]
+        final_shape = XP.ExperimentalData['dimensions']#[:4]
+        #final_shape.reverse()
+        XP.ExperimentalData['data'] = np.reshape(XP.ExperimentalData['data'],final_shape)
+
     def Read_FastSequence(self, filepathname, XP):
         self.filein = open(filepathname,'r')
         self.filein_txt = self.filein.readlines()
@@ -28,7 +46,6 @@ class LVM_IO:
         self.currentlinenumber = 0
         self.currentline = string.split(self.filein_txt[self.currentlinenumber],self.newline)[-2]
         while not self.FLAG_end_of_Fastsequence:
-            print self.currentlinenumber, self.currentline
             self._read_fstsq_property(XP)
 
     def _read_fstsq_property(self, XP):
@@ -81,13 +98,36 @@ class LVM_IO:
             self.currentline = string.split(self.filein_txt[self.currentlinenumber],self.newline)[-2]
 
         property_text = '#Sequence'
+        # this will go in a datasets
+        # 1st col = type
+        #       0 = DAC
+        #       1 = Timing
+        #       2 = Trigger
+        #       3 = jump
+        # 2nd col = DAC fastchennel only (0 else)
+        # 3rd col = value
+        #       DAC delta
+        #       time in ms
+        #       Triggers in binary:
+        #           Trig1 = T -> +2
+        #           Trig2 = T -> +4
+        #           Trig3 = T -> +8
+        #           Trig4 = T -> +16
+        #           stop = T -> +32
         if self.currentline[0:len(property_text)] == property_text:
+            XP.ExperimentalParameters['Fastsequence'] = []
             while not self.FLAG_end_of_Fastsequence :
                 #next
                 self.currentlinenumber += 1
                 self.currentline = string.split(self.filein_txt[self.currentlinenumber],self.newline)[-2]
 
-                #detect the type of fpga command
+                # detect the type of fpga command
+                # check for the end of the fast Sequence
+                # two possible bases:
+                # - no sequence, so the fast ramp starts at index = 0
+                # - finite sequence. i = 0..2 -> Trig1: T; wait; Trig1: F ... do something ...
+                #   Trig1: F (fast ramp: additional check of the FLAG rampmode) or jump (real time)
+                self.FLAG_finite_fastsequence = False
                 # Trigger
                 if string.split(self.currentline,':')[1][:4] == ' Tri':
                     trigs = string.split(self.currentline,':')[2]
@@ -97,15 +137,60 @@ class LVM_IO:
                             trigs[i] = True
                         else:
                             trigs[i] = False
-                        print trigs
-                elif string.split(self.currentline,':')[1][:4] == ' wai':
-                    print self.currentline
-                elif string.split(self.currentline,':')[1][:4] == ' DAC':
-                    print self.currentline
-                elif string.split(self.currentline,':')[1][:4] == ' jum':
-                    print self.currentline
-                self.FLAG_end_of_Fastsequence = True
 
+                    # check if there is a fastsequence at all
+                    # from the first line of the fastsequence
+                    if  (len(XP.ExperimentalParameters['Fastsequence']) == 0) and\
+                        trigs[0] == False:
+                        # no fastsequence
+                        #self.FLAG_finite_fastsequence = False #not necessary
+                        self.FLAG_end_of_Fastsequence = True
+                    else:
+                        #self.FLAG_finite_fastsequence = True
+                        self.FLAG_end_of_Fastsequence = False #not necessary
+
+                    # check if the fast sequence in the ramp mode ends with Trig1: F
+                    if  (len(XP.ExperimentalParameters['Fastsequence']) > 2) and\
+                        (trigs[0] == False) and \
+                        (XP.ExperimentalParameters['Info']['Rampmode'] == True):
+                        # end of the fastsequence
+                        #self.FLAG_finite_fastsequence = True #not necessary
+                        self.FLAG_end_of_Fastsequence = True
+
+                    # fill the fastsequence
+                    trig_decimal = 0
+                    for i,t in enumerate(trigs):
+                        if t == True:
+                            trig_decimal += 2**(i+1)
+                    XP.ExperimentalParameters['Fastsequence'].append([2,0,trig_decimal])
+
+                # Wait
+                elif string.split(self.currentline,':')[1][:4] == ' wai':
+                    self.currentline = re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*", self.currentline)
+                    # fill the fastsequence
+                    XP.ExperimentalParameters['Fastsequence'].append([1,0,float(self.currentline[1])])
+
+                # DAC
+                elif string.split(self.currentline,':')[1][:4] == ' DAC':
+                    self.currentline = re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*", self.currentline)
+                    # fill the fastsequence
+                    XP.ExperimentalParameters['Fastsequence'].append([0,int(self.currentline[1]),float(self.currentline[2])])
+
+                # Jump
+                elif string.split(self.currentline,':')[1][:4] == ' jum':
+                    # check if the fast sequence in the ramp mode ends with Trig1: F
+                    self.currentline = re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*", self.currentline)
+                    if  int(self.currentline[0]) == int(self.currentline[1]):
+                        # end of the fastsequence due to the infinite loop
+                        #self.FLAG_finite_fastsequence = True #not necessary
+                        self.FLAG_end_of_Fastsequence = True
+                    else:
+                        # go to the wanted step of the fastsequence
+                        # compute
+                        jump_length = int(self.currentline[1]) - int(self.currentline[0])
+                        # go
+                        self.currentlinenumber += jump_length
+                        self.currentline = string.split(self.filein_txt[self.currentlinenumber],self.newline)[-2]
         # while self.currentline == '\n':
         #     self.currentline = self.filein.readline()
         #     self.currentlinenumber += 1
@@ -154,7 +239,6 @@ class LVM_IO:
                 self.currentline = string.split(self.filein.readline(),self.newline)[0]
                 XP.ExperimentalData['measures'][i].append(self.currentline)
                 self.currentlinenumber += 1
-                # print self.currentline
 
         # DAC values
         # There might be more lines written in the file than that actually used ...
@@ -190,8 +274,28 @@ class LVM_IO:
         self._header_size = 0
         while not FLAG_end_of_header: #self.header_size<100: # () or
             self.currentline = self.filein.readline()
-            #print len(currentline)
-            #print currentline[0:len(self.endofheader_string)] + ' -- ' + self.endofheader_string
             if self.currentline[0:len(self.endofheader_string)] == self.endofheader_string:
                 FLAG_end_of_header = True
             self._header_size += 1
+
+    def _lvm_confirm_scan_dimensions(self,filepathname,XP):
+        # As the different labview programs gives more or less wrong
+        # sweep dimensions, we have to check it.
+        # In order to do so, we read the first sweep manually.
+        self.filein = open(filepathname,'r')
+        for i in range(self._header_size):
+            self.filein.readline() # Go back to the end of the header
+        # Finf the begining of the scan
+        self.currentline = self.filein.readline()
+        self.currentline = string.split(self.currentline,self.newline)
+        while (self.currentline[0] == '') or (self.currentline[0][0] == '#'):
+            self.currentline = self.filein.readline()
+            self.currentline = string.split(self.currentline,self.newline)
+        self.sweep_length = 0
+        while self.currentline[0] != '':
+            self.sweep_length += 1
+            self.currentline = self.filein.readline()
+            self.currentline = string.split(self.currentline,self.newline)
+        if XP.ExperimentalData['dimensions'][1] != self.sweep_length:
+            XP.ExperimentalData['dimensions'][1] = self.sweep_length
+            print 'Changing the sweep length given in the header to: ' + str(self.sweep_length)

@@ -1,5 +1,4 @@
-import string
-import re
+import string, re, os
 import numpy as np
 
 class LVM_IO:
@@ -21,25 +20,42 @@ class LVM_IO:
         self.Fastchannels_number_of_lines = 16
         self.FLAG_end_of_Fastsequence = False
 
-    def Read_data(self, filepathname, XP):
+    def Read_data(self, filepath, filename, XP, read_multiple_files = False):
+
         # Correct the dimensions
-        self._lvm_confirm_scan_dimensions(filepathname, XP)
+        # sweep
+        self._lvm_confirm_sweep_dimensions(filepath, filename, XP)
+        # if necessary step3
+        list_of_filenames = self._lvm_confirm_step3_dimensions(filepath, filename, XP, read_multiple_files)
         # initialize the data array
-        #convertfunc = lambda x: float(x.strip("%"))
+        XP.ExperimentalData['data'] = np.zeros(XP.ExperimentalData['dimensions'])
+        # define the conversion function
         convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
 
-        XP.ExperimentalData['data'] = np.genfromtxt(\
-                                    fname = filepathname,\
+        for i,f in enumerate(list_of_filenames):
+            print 'Loading file: '+ f
+            locdata = np.genfromtxt(fname = filepath + os.sep + f,\
                                     comments = '#',\
                                     converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
                                     skip_header = self._header_size)
-        XP.ExperimentalData['data'] = XP.ExperimentalData['data'][:,-XP.ExperimentalData['dimensions'][0]:]
-        final_shape = XP.ExperimentalData['dimensions']#[:4]
-        #final_shape.reverse()
-        XP.ExperimentalData['data'] = np.reshape(XP.ExperimentalData['data'],final_shape)
+            locdata = locdata[:,-XP.ExperimentalData['dimensions'][0]:]
+            final_shape = XP.ExperimentalData['dimensions']
+            XP.ExperimentalData['data'][:,:,:,:,i] = np.reshape(locdata,final_shape[:4])
+        # this worked for one file
+        # XP.ExperimentalData['data'] = np.genfromtxt(\
+        #                             fname = [filepath + os.sep + filename],\
+        #                             comments = '#',\
+        #                             converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
+        #                             skip_header = self._header_size)
+        # XP.ExperimentalData['data'] = XP.ExperimentalData['data'][:,-XP.ExperimentalData['dimensions'][0]:]
+        # final_shape = XP.ExperimentalData['dimensions']
+        # XP.ExperimentalData['data'] = np.reshape(XP.ExperimentalData['data'],final_shape)
 
-    def Read_FastSequence(self, filepathname, XP):
-        self.filein = open(filepathname,'r')
+    def Read_FastSequence(self, filepath, filename, XP, read_multiple_files):
+        if read_multiple_files:
+            self.filein = open(filepath + os.sep + filename[:-9] + '00000.fstsq','r')
+        else:
+            self.filein = open(filepath + os.sep + filename,'r')
         self.filein_txt = self.filein.readlines()
         self.filein.close()
 
@@ -195,8 +211,8 @@ class LVM_IO:
         #     self.currentline = self.filein.readline()
         #     self.currentlinenumber += 1
 
-    def Read_header(self, filepathname, XP):
-        self.filein = open(filepathname,'r')
+    def Read_header(self, filepath, filename, XP, read_multiple_files):
+        self.filein = open(filepath + os.sep + filename,'r')
         self._read_header_size()
         self.filein.seek(0) # Go back to the begin of the file
 
@@ -278,11 +294,36 @@ class LVM_IO:
                 FLAG_end_of_header = True
             self._header_size += 1
 
-    def _lvm_confirm_scan_dimensions(self,filepathname,XP):
+    def _lvm_confirm_step3_dimensions(self,filepath,filename,XP,read_multiple_files):
+        # the name of the method is somewhat misleading as it also returns the list of
+        # filenames to load (step3)
+        if read_multiple_files:
+            list_of_filenames = []
+            # the file format should be: path/name_xxxxx.lvm
+            # therefore, we can safely cut the '_xxxxx.lvm' part and look for files
+            # one should remember that '_00000.fstsq' exists
+            lfiles_in_directory = os.listdir(filepath)
+            for f in lfiles_in_directory:
+                if  (f != [filename[:-9] + '00000.fstsq']) and \
+                    (f[:-9] == filename[:-9]):
+                    # wanted files only
+                    list_of_filenames.append(f)
+        else:
+            list_of_filenames = [filename]
+
+        self.step3_length = len(list_of_filenames)
+        if len(XP.ExperimentalData['dimensions']) >=5:
+            if XP.ExperimentalData['dimensions'][4] != self.step3_length:
+                print 'Changing the step3 length given in the header to: ' + str(self.step3_length)
+                XP.ExperimentalData['dimensions'][4] = self.step3_length
+
+        return list_of_filenames
+
+    def _lvm_confirm_sweep_dimensions(self,filepath, filename,XP):
         # As the different labview programs gives more or less wrong
         # sweep dimensions, we have to check it.
         # In order to do so, we read the first sweep manually.
-        self.filein = open(filepathname,'r')
+        self.filein = open(filepath + os.sep + filename,'r')
         for i in range(self._header_size):
             self.filein.readline() # Go back to the end of the header
         # Finf the begining of the scan

@@ -13,26 +13,36 @@ class ExperimentFileManager():
     def Read_Experiment_File(self,\
                              filepath = os.getcwd(),\
                              filename = 'file.lvm',\
-                             read_fstsq = False):
+                             read_fstsq = False,\
+                             read_multiple_files = False):
+
         if filename[-3:] == 'lvm':
+
             self.CurrentFileIO = LVMManager.LVM_IO(read_fstsq)
+
+            # save the path to reause eventually in the writing
+            # we do it here to simply remove the filename extension
+            self.filepath = filepath
+            self.filename = filename[:-4]
 
             # read the main file
             filepathname = filepath + os.sep + filename
-            self.CurrentFileIO.Read_header(filepathname, self.XP)
-            self.CurrentFileIO.Read_data(filepathname, self.XP)
-            #self.CurrentFileIO._lvm_confirm_scan_dimensions(filepathname, self.XP)
+            self.CurrentFileIO.Read_header(filepath, filename, self.XP, read_multiple_files)
+            self.CurrentFileIO.Read_data(filepath, filename, self.XP, read_multiple_files)
 
             # read the fast sequence file if it exists
-            filepathname = filepath + os.sep + filename[:-3] + 'fstsq'
-            self.CurrentFileIO.Read_FastSequence(filepathname, self.XP)
+            self.CurrentFileIO.Read_FastSequence(filepath, filename, self.XP, read_multiple_files)
 
     def Write_Experiment_to_h5(self,\
-            filepath = os.getcwd(),\
-            filename = 'file.h5',\
+            filepath = '',\
+            filename = '',\
             group_name = '/raw_data'):
 
         #File name
+        if filepath == '':
+            filepath = self.filepath # recall the path of the original file
+        if filename == '':
+            filename = self.filename + '.h5'# recall the name of the original file minus extension
         filepathname = filepath + os.sep + filename
 
         # Create the h5 file
@@ -132,8 +142,7 @@ if __name__ == "__main__":
     XP = MultiDimExperiment.MultiDimExperiment()
     FM = ExperimentFileManager(XP)
     FM.Read_Experiment_File(filepath = '/Users/pierre-andremortemousque/Documents/Research/GitHub/Data',\
-                            filename = "stat8_1124.lvm",\
-                            read_fstsq = True)
-    FM.Write_Experiment_to_h5(filepath = '/Users/pierre-andremortemousque/Documents/Research/GitHub/Data',\
-                              filename = "stat8_1124.h5",\
-                              group_name = 'raw_data')
+                            filename = "stat8_1325_00000.lvm",\
+                            read_fstsq = True,
+                            read_multiple_files = True)
+    FM.Write_Experiment_to_h5()

@@ -20,4 +20,3 @@ class MultiDimExperiment():
         # 'Info' allows a simpler saving/reading
         self.ExperimentalParameters = {}
         self.ExperimentalParameters['Info'] = {}
-        self.ExperimentalParameters['Info']['dimensions'] = [0]

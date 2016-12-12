@@ -31,12 +31,17 @@ class LVM_IO:
         XP.ExperimentalData['data'] = np.zeros(XP.ExperimentalData['dimensions'])
         # define the conversion function
         convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
+        converters = {}
+        for i in range(XP.ExperimentalData['dimensions'][0]):
+            converters[i+1] = convertfunc
 
+        # loading loop
         for i,f in enumerate(list_of_filenames):
             print 'Loading file: '+ f
             locdata = np.genfromtxt(fname = filepath + os.sep + f,\
                                     comments = '#',\
-                                    converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
+                                    #converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
+                                    converters = converters,\
                                     skip_header = self._header_size)
             locdata = locdata[:,-XP.ExperimentalData['dimensions'][0]:]
             final_shape = XP.ExperimentalData['dimensions']
@@ -55,7 +60,7 @@ class LVM_IO:
         if read_multiple_files:
             self.filein = open(filepath + os.sep + filename[:-9] + '00000.fstsq','r')
         else:
-            self.filein = open(filepath + os.sep + filename,'r')
+            self.filein = open(filepath + os.sep + filename[:-4] + '.fstsq','r')
         self.filein_txt = self.filein.readlines()
         self.filein.close()
 

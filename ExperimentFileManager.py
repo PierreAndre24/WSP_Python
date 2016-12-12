@@ -1,6 +1,6 @@
 import os, h5py
 import numpy as np
-import LVMManager, MultiDimExperiment
+import h5Manager, LVMManager, MultiDimExperiment
 
 class ExperimentFileManager():
 
@@ -13,30 +13,46 @@ class ExperimentFileManager():
     def Read_Experiment_File(self,\
                              filepath = os.getcwd(),\
                              filename = 'file.lvm',\
-                             read_fstsq = False,\
+                             group_name = '',\
+                             read_fstsq = True,\
                              read_multiple_files = False):
 
         if filename[-3:] == 'lvm':
 
             self.CurrentFileIO = LVMManager.LVM_IO(read_fstsq)
 
-            # save the path to reause eventually in the writing
+            # save the path to reuse eventually in the writing
             # we do it here to simply remove the filename extension
             self.filepath = filepath
             self.filename = filename[:-4]
 
             # read the main file
-            filepathname = filepath + os.sep + filename
             self.CurrentFileIO.Read_header(filepath, filename, self.XP, read_multiple_files)
             self.CurrentFileIO.Read_data(filepath, filename, self.XP, read_multiple_files)
 
             # read the fast sequence file if it exists
             self.CurrentFileIO.Read_FastSequence(filepath, filename, self.XP, read_multiple_files)
 
+        elif filename[-2:] == 'h5':
+
+            self.CurrentFileIO = h5Manager.h5_IO(read_fstsq)
+
+            # save the path to reause eventually in the writing
+            # we do it here to simply remove the filename extension
+            self.filepath = filepath
+            self.filename = filename[:-3]
+
+            # read the main file
+            self.CurrentFileIO.Read_header(filepath, filename, self.XP, group_name)
+            self.CurrentFileIO.Read_data(filepath, filename, self.XP, group_name)
+
+            # read the fast sequence file if it exists
+            self.CurrentFileIO.Read_FastSequence(filepath, filename, self.XP, group_name)
+
     def Write_Experiment_to_h5(self,\
             filepath = '',\
             filename = '',\
-            group_name = '/raw_data'):
+            group_name = 'raw_data'):
 
         #File name
         if filepath == '':
@@ -119,6 +135,18 @@ class ExperimentFileManager():
                 compression_opts = self.compression_level)
         ExpPFastS[:] = np.asarray(self.XP.ExperimentalParameters['Fastsequence'])
 
+        # Save the DAC_initial_values as DS
+        # if 'DAC_initial_values' in self.XP.ExperimentalParameters['Info'].keys():
+        #     self.ExpPInfoExceptions.append('DAC_initial_values')
+        #     chunkSize = [len(XP.ExperimentalParameters['Info']['DAC_initial_values'])]
+        #     print chunkSize
+        #     ExpPDACinit = f.create_dataset(\
+        #             group_name + "/ExperimentalParameters/DAC_initial_values", \
+        #             tuple(chunkSize), \
+        #             compression = self.compression_type, \
+        #             compression_opts = self.compression_level)
+        #     ExpPDACinit[:] = np.asarray(XP.ExperimentalParameters['Info']['DAC_initial_values'])
+
         # Save the Fastchannels dictionary
         if 'Fastchannels' in self.XP.ExperimentalParameters['Info'].keys():
             Fastchannels = []
@@ -142,7 +170,12 @@ if __name__ == "__main__":
     XP = MultiDimExperiment.MultiDimExperiment()
     FM = ExperimentFileManager(XP)
     FM.Read_Experiment_File(filepath = '/Users/pierre-andremortemousque/Documents/Research/GitHub/Data',\
-                            filename = "stat8_1325_00000.lvm",\
-                            read_fstsq = True,
-                            read_multiple_files = True)
+                            filename = "stat8_1124.lvm",\
+                            read_multiple_files = False)
     FM.Write_Experiment_to_h5()
+
+    FM.Read_Experiment_File(filepath = '/Users/pierre-andremortemousque/Documents/Research/GitHub/Data',\
+                            filename = "stat8_1124.h5",\
+                            group_name = 'raw_data')
+
+    print XP.ExperimentalData['dimensions']

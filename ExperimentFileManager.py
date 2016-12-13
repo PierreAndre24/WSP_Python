@@ -79,6 +79,10 @@ class ExperimentFileManager():
         else:
             group = f.create_group(group_name)
 
+        # Write the FileInfo entries as attributes of the group "group_name"
+        for e in self.XP.FileInfo.keys():
+            group.attrs[e] = self.XP.FileInfo[e]
+
         # Create the parameters and data datasets
 
         # ExperimentalData
@@ -105,19 +109,6 @@ class ExperimentFileManager():
 
         # ExperimentalParameters group as ExpP
         ExpP = f.create_group(group_name + '/ExperimentalParameters')
-        # chunkSize = self.XP.ExperimentalParameters['Info']['dimensions']
-        # if len(chunkSize) > 2:
-        #     for i in range(2,len(chunkSize)):
-        #         chunkSize[i] = 1
-        # ExperimentalParameters = f.create_dataset(\
-        #         group_name + "/ExperimentalParameters", \
-        #         tuple(chunkSize), \
-        #         compression = self.compression_type, \
-        #         compression_opts = self.compression_level)
-
-        # Write the FileInfo entries as attributes of the group "group_name"
-        for e in self.XP.FileInfo.keys():
-            group.attrs[e] = self.XP.FileInfo[e]
 
         # Write the Info entries as attributes of the group "ExperimentalParameters"
 
@@ -132,17 +123,22 @@ class ExperimentFileManager():
                 compression_opts = self.compression_level)
         ExpPFastS[:] = np.asarray(self.XP.ExperimentalParameters['Fastsequence'])
 
-        # Save the DAC_initial_values as DS
-        # if 'DAC_initial_values' in self.XP.ExperimentalParameters['Info'].keys():
-        #     self.ExpPInfoExceptions.append('DAC_initial_values')
-        #     chunkSize = [len(XP.ExperimentalParameters['Info']['DAC_initial_values'])]
-        #     print chunkSize
-        #     ExpPDACinit = f.create_dataset(\
-        #             group_name + "/ExperimentalParameters/DAC_initial_values", \
-        #             tuple(chunkSize), \
-        #             compression = self.compression_type, \
-        #             compression_opts = self.compression_level)
-        #     ExpPDACinit[:] = np.asarray(XP.ExperimentalParameters['Info']['DAC_initial_values'])
+        # Save all parameters as DS
+        # First write the the name of all moving parameters
+        all_moving_parameters = []
+        loc_dict_of_ExpP_MP = {}
+        for k in XP.ExperimentalParameters['moving_parameters'].keys():
+            all_moving_parameters.append(k)
+            loc_dict_of_ExpP_MP[k] = f.create_dataset(\
+                    group_name + "/ExperimentalParameters/" + k, \
+                    tuple(XP.ExperimentalParameters['moving_parameters'][k]['dimensions']), \
+                    chunks = True,\
+                    compression = self.compression_type, \
+                    compression_opts = self.compression_level)
+            loc_dict_of_ExpP_MP[k][:] = XP.ExperimentalParameters['moving_parameters'][k]['values']
+            loc_dict_of_ExpP_MP[k].attrs['dimensions'] = XP.ExperimentalParameters['moving_parameters'][k]['dimensions']
+            loc_dict_of_ExpP_MP[k].attrs['unit'] = XP.ExperimentalParameters['moving_parameters'][k]['unit']
+        ExpP.attrs['all_moving_parameters'] = all_moving_parameters
 
         # Save the Fastchannels dictionary
         if 'Fastchannels' in self.XP.ExperimentalParameters['Info'].keys():
@@ -171,8 +167,8 @@ if __name__ == "__main__":
                             read_multiple_files = False)
     FM.Write_Experiment_to_h5()
 
-    FM.Read_Experiment_File(filepath = '/Users/pierre-andremortemousque/Documents/Research/GitHub/Data',\
-                            filename = "stat8_1124.h5",\
-                            group_name = 'raw_data')
+    # FM.Read_Experiment_File(filepath = '/Users/pierre-andremortemousque/Documents/Research/GitHub/Data',\
+    #                         filename = "stat8_1124.h5",\
+    #                         group_name = 'raw_data')
 
     print XP.ExperimentalData['dimensions']

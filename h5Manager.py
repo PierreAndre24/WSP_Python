@@ -11,7 +11,15 @@ class h5_IO:
         with h5py.File(filepath + os.sep + filename,'r') as f:
             XP.ExperimentalData['data'] = f.get(group_name + '/ExperimentalData')[:]
             for k in f[group_name]['ExperimentalData'].attrs.keys():
-                XP.ExperimentalData[k] = f[group_name]['ExperimentalData'].attrs[k]
+                if k != 'moving_parameters':
+                    XP.ExperimentalData[k] = f[group_name]['ExperimentalData'].attrs[k]
+                else:
+                    moving_parameters = f[group_name]['ExperimentalParameters']['moving_parameters']
+            for mp in moving_parameters:
+                XP.ExperimentalParameters['moving_parameters'][mp] = {}
+                XP.ExperimentalParameters['moving_parameters'][mp]['values'] = f.get(group_name + '/ExperimentalParameters/' + mp)[:]
+                XP.ExperimentalParameters['moving_parameters'][mp]['dimensions'] = f[group_name]['ExperimentalParameters'][mp].attrs['dimensions']
+                XP.ExperimentalParameters['moving_parameters'][mp]['unit'] = f[group_name]['ExperimentalParameters'][mp].attrs['unit']
 
     def Read_FastSequence(self, filepath, filename, XP, group_name):
 

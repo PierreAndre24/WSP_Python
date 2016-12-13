@@ -48,15 +48,92 @@ class LVM_IO:
             locdata = np.reshape(locdata,(n_points))
             final_shape = XP.ExperimentalData['dimensions']
             XP.ExperimentalData['data'][:,:,:,:,i] = np.reshape(locdata,tuple(final_shape[:4]),order = 'F')
-        # this worked for one file
-        # XP.ExperimentalData['data'] = np.genfromtxt(\
-        #                             fname = [filepath + os.sep + filename],\
-        #                             comments = '#',\
-        #                             converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
-        #                             skip_header = self._header_size)
-        # XP.ExperimentalData['data'] = XP.ExperimentalData['data'][:,-XP.ExperimentalData['dimensions'][0]:]
-        # final_shape = XP.ExperimentalData['dimensions']
-        # XP.ExperimentalData['data'] = np.reshape(XP.ExperimentalData['data'],final_shape)
+
+            # To load the experimental parameters, we assume 'square' scans
+            # That is to say the parameter values for one dimension are independent of other dims.
+            # Load sweep, step and step2
+            # initialize moving_parameters
+            XP.ExperimentalParameters['moving_parameters'] = {}
+            if i == 0:
+                if read_multiple_files:
+                    self.filein = open(filepath + os.sep + filename[:-9] + '00000.lvm','r')
+                else:
+                    self.filein = open(filepath + os.sep + filename[:-4] + '.lvm','r')
+                self.filein_txt = self.filein.readlines()
+                self.filein.close()
+                for l in self.filein_txt:
+                    ls = string.split(l)
+                    if   l[:7] == '#sweep ':
+                        if ls[1] == 'offset':
+                            DAC_column = int(ls[3])
+                            DAC_row = int(ls[5])
+                            xi = float(ls[7])
+                            xf = float(ls[10])
+                            unit = ls[-1]
+                            name = 'dV' + str(DAC_column) + ':' + str(DAC_row)
+                            XP.ExperimentalParameters['moving_parameters'][name] = {}
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'] = [1] * len(XP.ExperimentalData['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1] = XP.ExperimentalData['dimensions'][1]
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'][0,:,0,0,0] = np.linspace(xi,xf,XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1])
+                            XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
+                        if ls[1] == 'counter':
+                            unit = 'a.u.
+                            name = 'time'
+                            XP.ExperimentalParameters['moving_parameters'][name] = {}
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'] = [1] * len(XP.ExperimentalData['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1] = XP.ExperimentalData['dimensions'][1]
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'][0,:,0,0,0] = np.linspace(0,1,XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1])
+                            XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
+                    elif l[:7] == '# step
+                        if ls[3] == 'DAC:':
+                            DAC_column = int(ls[3])
+                            DAC_row = int(ls[5])
+                            xi = float(ls[7])
+                            xf = float(ls[10])
+                            unit = ls[-1]
+                            name = 'dV' + str(DAC_column) + ':' + str(DAC_row)
+                            XP.ExperimentalParameters['moving_parameters'][name] = {}
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'] = [1] * len(XP.ExperimentalData['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1] = XP.ExperimentalData['dimensions'][1]
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'][0,:,0,0,0] = np.linspace(xi,xf,XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1])
+                            XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
+                        if ls[3] == 'counter:':
+                            DAC_column = int(ls[3])
+                            DAC_row = int(ls[5])
+                            xi = float(ls[7])
+                            xf = float(ls[10])
+                            unit = ls[-1]
+                            name = 'dV' + str(DAC_column) + ':' + str(DAC_row)
+                            XP.ExperimentalParameters['moving_parameters'][name] = {}
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'] = [1] * len(XP.ExperimentalData['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1] = XP.ExperimentalData['dimensions'][1]
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'][0,:,0,0,0] = np.linspace(xi,xf,XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1])
+                            XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
+                        if ls[3] == 'fast':
+                            DAC_column = int(ls[3])
+                            DAC_row = int(ls[5])
+                            xi = float(ls[7])
+                            xf = float(ls[10])
+                            unit = ls[-1]
+                            name = 'dV' + str(DAC_column) + ':' + str(DAC_row)
+                            XP.ExperimentalParameters['moving_parameters'][name] = {}
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'] = [1] * len(XP.ExperimentalData['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1] = XP.ExperimentalData['dimensions'][1]
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
+                            XP.ExperimentalParameters['moving_parameters'][name]['values'][0,:,0,0,0] = np.linspace(xi,xf,XP.ExperimentalParameters['moving_parameters'][name]['dimensions'][1])
+                            XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
+                    elif l[:7] == '# step2':
+                        pass
+                    elif l[:7] == '# step3':
+                        pass
+
+            # Load step3
+            if (i == len(list_of_filenames)-1) and i>0:
+                pass
 
     def Read_FastSequence(self, filepath, filename, XP, read_multiple_files):
         if read_multiple_files:

@@ -34,7 +34,6 @@ class ExperimentFileManager():
             self.CurrentFileIO.Read_FastSequence(filepath, filename, self.XP, read_multiple_files)
 
         elif filename[-2:] == 'h5':
-
             self.CurrentFileIO = h5Manager.h5_IO(read_fstsq)
 
             # save the path to reause eventually in the writing

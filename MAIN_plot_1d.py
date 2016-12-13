@@ -15,13 +15,6 @@ FM.Read_Experiment_File(filepath = filepath,\
 #print XP.ExperimentalData['data'].shape
 
 fig = plt.figure()
-ax = fig.add_subplot(2, 2, 1)
-plt.plot(XP.ExperimentalData['data'][0,:,55,900,0])
-ax = fig.add_subplot(2, 2, 2)
+ax = fig.add_subplot(1, 1, 1)
 plt.plot(XP.ExperimentalData['data'][1,:,55,900,0])
-ax = fig.add_subplot(2, 2, 3)
-plt.plot(XP.ExperimentalData['data'][2,:,55,900,0])
-ax = fig.add_subplot(2, 2, 4)
-plt.plot(XP.ExperimentalData['data'][3,:,55,900,0])
-ax.set_title(filename)
 plt.show()

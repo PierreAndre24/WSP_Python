@@ -10,16 +10,22 @@ class h5_IO:
     def Read_data(self, filepath, filename, XP, group_name, read_multiple_files = False):
         with h5py.File(filepath + os.sep + filename,'r') as f:
             XP.ExperimentalData['data'] = f.get(group_name + '/ExperimentalData')[:]
+
             for k in f[group_name]['ExperimentalData'].attrs.keys():
-                if k != 'moving_parameters':
-                    XP.ExperimentalData[k] = f[group_name]['ExperimentalData'].attrs[k]
-                else:
-                    moving_parameters = f[group_name]['ExperimentalParameters']['moving_parameters']
+                XP.ExperimentalData[k] = f[group_name]['ExperimentalData'].attrs[k]
+
+            moving_parameters = f[group_name]['ExperimentalParameters'].attrs['all_moving_parameters']
             for mp in moving_parameters:
                 XP.ExperimentalParameters['moving_parameters'][mp] = {}
                 XP.ExperimentalParameters['moving_parameters'][mp]['values'] = f.get(group_name + '/ExperimentalParameters/' + mp)[:]
                 XP.ExperimentalParameters['moving_parameters'][mp]['dimensions'] = f[group_name]['ExperimentalParameters'][mp].attrs['dimensions']
                 XP.ExperimentalParameters['moving_parameters'][mp]['unit'] = f[group_name]['ExperimentalParameters'][mp].attrs['unit']
+                XP.ExperimentalParameters['moving_parameters'][mp]['type'] = f[group_name]['ExperimentalParameters'][mp].attrs['type']
+                if 'DAC' in XP.ExperimentalParameters['moving_parameters'][mp]['type']:
+                    XP.ExperimentalParameters['moving_parameters'][mp]['DAC_row'] = f[group_name]['ExperimentalParameters'][mp].attrs['DAC_row']
+                    XP.ExperimentalParameters['moving_parameters'][mp]['DAC_column'] = f[group_name]['ExperimentalParameters'][mp].attrs['DAC_column']
+                if 'fast' in XP.ExperimentalParameters['moving_parameters'][mp]['type']:
+                    XP.ExperimentalParameters['moving_parameters'][mp]['slot'] = f[group_name]['ExperimentalParameters'][mp].attrs['slot']
 
     def Read_FastSequence(self, filepath, filename, XP, group_name):
 

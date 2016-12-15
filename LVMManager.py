@@ -118,7 +118,7 @@ class LVM_IO:
             for ib, b in enumerate(self.filein_txt[1:]):
                 if (ib > 0) and (ib%XP.ExperimentalData['dimensions'][2] == 0):
                     for l in b[self.NPstep : self.NPstep + self.NPstep2]:
-                        self._read_parameter_information(l[7:], 3, XP, mode = 'fill', index_in_current_dim = ib/XP.ExperimentalData['dimensions'][2])
+                        self._read_parameter_information(l[7:], 3, XP, mode = 'fill', index_in_current_dim = int(ib/XP.ExperimentalData['dimensions'][2]))
         else: #else of fileindex == 0 only step3 info
             b = self.filein_txt[1]
             for l in b[self.NPstep + self.NPstep2 : self.NPstep + self.NPstep2 + self.NPstep3]:
@@ -185,7 +185,7 @@ class LVM_IO:
 
             elif ls[0] == 'counter':
                 param_type = 'counter'
-                name = 'counter'
+                name = 'counter[' + str(current_dim) + ']'
                 dimensions = [1] * 5
                 dimensions[current_dim] = XP.ExperimentalData['dimensions'][current_dim]
                 unit = 'a.u.'
@@ -193,7 +193,7 @@ class LVM_IO:
 
             elif (ls[0] == 'fast') and (ls[2] == 'timing'):
                 param_type = 'fast timing'
-                param_slot = int[ls[4]]
+                param_slot = int(ls[4])
                 name = 'timing ' + '[' + str(param_slot) + ']'
                 dimensions = [1] * 5
                 dimensions[current_dim] = XP.ExperimentalData['dimensions'][current_dim]

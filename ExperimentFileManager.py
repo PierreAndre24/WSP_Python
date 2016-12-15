@@ -127,25 +127,25 @@ class ExperimentFileManager():
         # First write the the name of all moving parameters
         all_moving_parameters = []
         loc_dict_of_ExpP_MP = {}
-        for k in XP.ExperimentalParameters['moving_parameters'].keys():
+        for k in self.XP.ExperimentalParameters['moving_parameters'].keys():
             if k != 'dimensions':
                 all_moving_parameters.append(k)
                 loc_dict_of_ExpP_MP[k] = f.create_dataset(\
                         group_name + "/ExperimentalParameters/" + k,\
-                        tuple(XP.ExperimentalParameters['moving_parameters'][k]['dimensions']),\
+                        tuple(self.XP.ExperimentalParameters['moving_parameters'][k]['dimensions']),\
                         chunks = True,\
                         compression = self.compression_type,\
                         compression_opts = self.compression_level)
 
-                loc_dict_of_ExpP_MP[k][:] = XP.ExperimentalParameters['moving_parameters'][k]['values']
-                loc_dict_of_ExpP_MP[k].attrs['dimensions'] = XP.ExperimentalParameters['moving_parameters'][k]['dimensions']
-                loc_dict_of_ExpP_MP[k].attrs['unit'] = XP.ExperimentalParameters['moving_parameters'][k]['unit']
-                loc_dict_of_ExpP_MP[k].attrs['type'] = XP.ExperimentalParameters['moving_parameters'][k]['type']
+                loc_dict_of_ExpP_MP[k][:] = self.XP.ExperimentalParameters['moving_parameters'][k]['values']
+                loc_dict_of_ExpP_MP[k].attrs['dimensions'] = self.XP.ExperimentalParameters['moving_parameters'][k]['dimensions']
+                loc_dict_of_ExpP_MP[k].attrs['unit'] = self.XP.ExperimentalParameters['moving_parameters'][k]['unit']
+                loc_dict_of_ExpP_MP[k].attrs['type'] = self.XP.ExperimentalParameters['moving_parameters'][k]['type']
                 if 'DAC' in XP.ExperimentalParameters['moving_parameters'][k]['type']:
-                    loc_dict_of_ExpP_MP[k].attrs['DAC_row'] = XP.ExperimentalParameters['moving_parameters'][k]['DAC_row']
-                    loc_dict_of_ExpP_MP[k].attrs['DAC_column'] = XP.ExperimentalParameters['moving_parameters'][k]['DAC_column']
+                    loc_dict_of_ExpP_MP[k].attrs['DAC_row'] = self.XP.ExperimentalParameters['moving_parameters'][k]['DAC_row']
+                    loc_dict_of_ExpP_MP[k].attrs['DAC_column'] = self.XP.ExperimentalParameters['moving_parameters'][k]['DAC_column']
                 if 'fast' in XP.ExperimentalParameters['moving_parameters'][k]['type']:
-                    loc_dict_of_ExpP_MP[k].attrs['slot'] = XP.ExperimentalParameters['moving_parameters'][k]['slot']
+                    loc_dict_of_ExpP_MP[k].attrs['slot'] = self.XP.ExperimentalParameters['moving_parameters'][k]['slot']
         ExpP.attrs['all_moving_parameters'] = all_moving_parameters
 
         # Save the Fastchannels dictionary

@@ -35,25 +35,26 @@ class LVM_IO:
         XP.ExperimentalData['data'] = np.zeros(XP.ExperimentalData['dimensions'])
         # initialize moving_parameters
         XP.ExperimentalParameters['moving_parameters'] = {}
+
         # define the conversion function
-        convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
-        converters = {}
-        for i in range(XP.ExperimentalData['dimensions'][-1]):
-            converters[i+1] = convertfunc
+        #convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
+        #converters = {}
+        #for i in range(XP.ExperimentalData['dimensions'][-1]):
+        #    converters[i+1] = convertfunc
 
         # loading loop
         for i,f in enumerate(list_of_filenames):
             print 'Loading file: '+ f
             locdata = np.genfromtxt(fname = filepath + os.sep + f,\
                                     comments = '#',\
-                                    #converters = {1: convertfunc, 2: convertfunc, 3: convertfunc, 4: convertfunc},\
-                                    converters = converters,\
+                                    #converters = converters,\
+                                    dtype = float,\
                                     skip_header = self._header_size)
             locdata = locdata[:,-XP.ExperimentalData['dimensions'][0]:]
             n_points = locdata.shape[0] * locdata.shape[1]
             locdata = np.reshape(locdata,(n_points))
             final_shape = XP.ExperimentalData['dimensions']
-            XP.ExperimentalData['data'][:,:,:,:,i] = np.reshape(locdata,tuple(final_shape[:4]),order = 'F')
+            XP.ExperimentalData['data'][:,:,:,:,i] = np.reshape(locdata,tuple(final_shape[:4]), order = 'F')
 
             # Read the axes
             self._read_data_axes(filepath, f, i, XP)
@@ -526,7 +527,8 @@ class LVM_IO:
             lfiles_in_directory = os.listdir(filepath)
             for f in lfiles_in_directory:
                 if  (f != [filename[:-9] + '00000.fstsq']) and \
-                    (f[:-9] == filename[:-9]):
+                    (f[:-9] == filename[:-9]) and \
+                    (f != filename[:-10] + '.lvm'):
                     # wanted files only
                     list_of_filenames.append(f)
         else:

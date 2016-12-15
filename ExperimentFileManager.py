@@ -56,7 +56,8 @@ class ExperimentFileManager():
     def Write_Experiment_to_h5(self,\
             filepath = '',\
             filename = '',\
-            group_name = 'raw_data'):
+            group_name = 'raw_data',
+            force_overwrite = False):
 
         #File name
         if filepath == '':
@@ -78,12 +79,21 @@ class ExperimentFileManager():
         self.FLAG_replacing_existing_group_authorization = False
         # the following condition should ask only one (in the case of
         # multiple files loading) the authorization to replace an existing group
-        if (group_name in f.keys()) and self.FLAG_replacing_existing_group_authorization == False:
+        if (group_name in f.keys()) and \
+            (self.FLAG_replacing_existing_group_authorization == False) and \
+            (force_overwrite == False):
+
             self.FLAG_replacing_existing_group_authorization = raw_input("Do you want to replace the existing group? y/n")
+
             if self.FLAG_replacing_existing_group_authorization == 'y':
                 self.FLAG_replacing_existing_group_authorization = True
             else:
                 return
+
+        elif (group_name in f.keys()) and \
+                (self.FLAG_replacing_existing_group_authorization == False) and\
+                (force_overwrite == True):
+            self.FLAG_replacing_existing_group_authorization = True
 
         if group_name in f.keys():
             if self.FLAG_replacing_existing_group_authorization:

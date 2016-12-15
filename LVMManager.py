@@ -33,6 +33,8 @@ class LVM_IO:
         list_of_filenames = self._lvm_confirm_step3_dimensions(filepath, filename, XP, read_multiple_files)
         # initialize the data array
         XP.ExperimentalData['data'] = np.zeros(XP.ExperimentalData['dimensions'])
+        # initialize moving_parameters
+        XP.ExperimentalParameters['moving_parameters'] = {}
         # define the conversion function
         convertfunc = lambda x: float(re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*",x)[0])
         converters = {}
@@ -63,8 +65,7 @@ class LVM_IO:
         # That is to say the parameter values for one dimension are independent of other dims.
         # Load sweep, step and step2
 
-        # initialize moving_parameters
-        XP.ExperimentalParameters['moving_parameters'] = {}
+        # load the file
         self.filein = open(filepath + os.sep + filename,'r')
         self.filein_txt = self.filein.readlines()
         self.filein.close()
@@ -98,9 +99,14 @@ class LVM_IO:
                     XP.ExperimentalParameters['moving_parameters']['dimensions'][4] += 1
 
             # initialize all dim>1 parameters (step, step2 and step3)
+            # NP stands for Number_of_Parameters in dim step/step2/step3
             self.NPstep = XP.ExperimentalParameters['moving_parameters']['dimensions'][2]
             self.NPstep2 = XP.ExperimentalParameters['moving_parameters']['dimensions'][3]
             self.NPstep3 = XP.ExperimentalParameters['moving_parameters']['dimensions'][4]
+            # N stands for Number_of_expected_points in dim step/step2/step3
+            self.Nstep = XP.ExperimentalData['dimensions'][2] # shortcut
+            self.Nstep2 = XP.ExperimentalData['dimensions'][3] # shortcut
+            self.Nstep3 = XP.ExperimentalData['dimensions'][4] # shortcut
             for l in self.filein_txt[1][0:self.NPstep]:
                 self._read_parameter_information(l[7:], 2, XP, mode = 'initialize and fill')
             for l in self.filein_txt[1][self.NPstep : self.NPstep + self.NPstep2]:
@@ -109,16 +115,18 @@ class LVM_IO:
                 self._read_parameter_information(l[7:], 4, XP, mode = 'initialize and fill')
 
             # Read step axes: [1:self.Nstep+1]. [1] is known already: start at [2]
-            for ib,b in enumerate(self.filein_txt[1:self.NPstep+1]):
+            for ib,b in enumerate(self.filein_txt[1:self.Nstep+1]): #from block 1 to block included
                 if ib > 0:
                     for l in b[0:self.NPstep]:
+                        # args are: (line, current_dim, XP, mode, index_in_current_dim)
                         self._read_parameter_information(l[7:], 2, XP, mode = 'fill', index_in_current_dim = ib)
 
             # Read step2 axes: skip the step info
             for ib, b in enumerate(self.filein_txt[1:]):
-                if (ib > 0) and (ib%XP.ExperimentalData['dimensions'][2] == 0):
+                if (ib > 0) and (ib%self.Nstep == 0):
                     for l in b[self.NPstep : self.NPstep + self.NPstep2]:
-                        self._read_parameter_information(l[7:], 3, XP, mode = 'fill', index_in_current_dim = int(ib/XP.ExperimentalData['dimensions'][2]))
+                        self._read_parameter_information(l[7:], 3, XP, mode = 'fill', index_in_current_dim = int(ib/self.Nstep))
+
         else: #else of fileindex == 0 only step3 info
             b = self.filein_txt[1]
             for l in b[self.NPstep + self.NPstep2 : self.NPstep + self.NPstep2 + self.NPstep3]:
@@ -218,7 +226,7 @@ class LVM_IO:
             XP.ExperimentalParameters['moving_parameters'][name]['dimensions'] = dimensions
             XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
             XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
-            XP.ExperimentalParameters['moving_parameters'][name]['type'] = param_type
+            XP.ExperimentalParameters['moving_parameters'][name]['param_type'] = param_type
             if 'DAC' in param_type:
                 XP.ExperimentalParameters['moving_parameters'][name]['DAC_row'] = DAC_row
                 XP.ExperimentalParameters['moving_parameters'][name]['DAC_column'] = DAC_column
@@ -249,6 +257,7 @@ class LVM_IO:
             # create a time axis from real time measurement parameters
             unit = 'ms'
             name = 'time'
+            param_type = 'time'
             ti = 0
             indexf = XP.ExperimentalData['dimensions'][1]
             timeperpoint = self.RT_average / (self.sampling_frequency/1000) * XP.ExperimentalData['dimensions'][0]
@@ -258,6 +267,7 @@ class LVM_IO:
             XP.ExperimentalParameters['moving_parameters'][name]['values'] = np.zeros(XP.ExperimentalParameters['moving_parameters'][name]['dimensions'])
             XP.ExperimentalParameters['moving_parameters'][name]['values'][0,:,0,0,0] = np.linspace(0, timeperpoint * indexf, indexf)
             XP.ExperimentalParameters['moving_parameters'][name]['unit'] = unit
+            XP.ExperimentalParameters['moving_parameters'][name]['param_type'] = param_type
 
 
     def Read_FastSequence(self, filepath, filename, XP, read_multiple_files):

@@ -17,6 +17,11 @@ class ExperimentFileManager():
                              read_fstsq = True,\
                              read_multiple_files = False):
 
+        if read_multiple_files:
+            print 'Loading multiple files including: '+ filepath + os.sep + filename
+        else:
+            print 'Loading the single file: '+ filepath + os.sep + filename
+
         if filename[-3:] == 'lvm':
 
             self.CurrentFileIO = LVMManager.LVM_IO(read_fstsq)
@@ -60,6 +65,8 @@ class ExperimentFileManager():
             filename = self.filename + '.h5'# recall the name of the original file minus extension
         filepathname = filepath + os.sep + filename
 
+        print 'Writing current XP to: '+ filepathname + '/' + group_name
+
         # Create the h5 file
         f = h5py.File(filepathname,'a')
 
@@ -68,9 +75,18 @@ class ExperimentFileManager():
 
         # Create the main group
         # If it exists already, ask the user what to do
+        self.FLAG_replacing_existing_group_authorization = False
+        # the following condition should ask only one (in the case of
+        # multiple files loading) the authorization to replace an existing group
+        if (group_name in f.keys()) and self.FLAG_replacing_existing_group_authorization == False:
+            self.FLAG_replacing_existing_group_authorization = raw_input("Do you want to replace the existing group? y/n")
+            if self.FLAG_replacing_existing_group_authorization == 'y':
+                self.FLAG_replacing_existing_group_authorization = True
+            else:
+                return
+
         if group_name in f.keys():
-            answer = raw_input("Do you want to replace the existing group? y/n")
-            if answer == 'y':
+            if self.FLAG_replacing_existing_group_authorization:
                 del f[group_name]
                 group = f.create_group(group_name)
             else:
@@ -78,6 +94,16 @@ class ExperimentFileManager():
                 return
         else:
             group = f.create_group(group_name)
+        # if group_name in f.keys():
+        #     answer = raw_input("Do you want to replace the existing group? y/n")
+        #     if answer == 'y':
+        #         del f[group_name]
+        #         group = f.create_group(group_name)
+        #     else:
+        #         f.close()
+        #         return
+        # else:
+        #     group = f.create_group(group_name)
 
         # Write the FileInfo entries as attributes of the group "group_name"
         for e in self.XP.FileInfo.keys():
@@ -140,11 +166,11 @@ class ExperimentFileManager():
                 loc_dict_of_ExpP_MP[k][:] = self.XP.ExperimentalParameters['moving_parameters'][k]['values']
                 loc_dict_of_ExpP_MP[k].attrs['dimensions'] = self.XP.ExperimentalParameters['moving_parameters'][k]['dimensions']
                 loc_dict_of_ExpP_MP[k].attrs['unit'] = self.XP.ExperimentalParameters['moving_parameters'][k]['unit']
-                loc_dict_of_ExpP_MP[k].attrs['type'] = self.XP.ExperimentalParameters['moving_parameters'][k]['type']
-                if 'DAC' in XP.ExperimentalParameters['moving_parameters'][k]['type']:
+                loc_dict_of_ExpP_MP[k].attrs['param_type'] = self.XP.ExperimentalParameters['moving_parameters'][k]['param_type']
+                if 'DAC' in self.XP.ExperimentalParameters['moving_parameters'][k]['param_type']:
                     loc_dict_of_ExpP_MP[k].attrs['DAC_row'] = self.XP.ExperimentalParameters['moving_parameters'][k]['DAC_row']
                     loc_dict_of_ExpP_MP[k].attrs['DAC_column'] = self.XP.ExperimentalParameters['moving_parameters'][k]['DAC_column']
-                if 'fast' in XP.ExperimentalParameters['moving_parameters'][k]['type']:
+                if 'fast' in self.XP.ExperimentalParameters['moving_parameters'][k]['param_type']:
                     loc_dict_of_ExpP_MP[k].attrs['slot'] = self.XP.ExperimentalParameters['moving_parameters'][k]['slot']
         ExpP.attrs['all_moving_parameters'] = all_moving_parameters
 

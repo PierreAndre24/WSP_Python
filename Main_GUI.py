@@ -26,8 +26,8 @@ class App(QMainWindow):
         helpMenu = mainMenu.addMenu('Help')
 
         # status bar
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
+        # self.statusBar = QStatusBar()
+        # self.setStatusBar(self.statusBar)
 
         # file menu buttons
 

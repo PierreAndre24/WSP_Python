@@ -159,6 +159,17 @@ class ExperimentFileManager():
                 compression_opts = self.compression_level)
         ExpPFastS[:] = np.asarray(self.XP.ExperimentalParameters['Fastsequence'])
 
+        # Save the Fastchannels dictionary
+        if 'Fastchannels' in self.XP.ExperimentalParameters['Info'].keys():
+            Fastchannels = []
+            self.ExpPInfoExceptions.append('Fastchannels')
+            for e in self.XP.ExperimentalParameters['Info']['Fastchannels']:
+                index = e
+                DAC_column = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][0]
+                DAC_row = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][1]
+                Fastchannels.append([index,DAC_column,DAC_row])
+            ExpPFastS.attrs['Fastchannels'] = np.asarray(Fastchannels)
+
         # Save all parameters as DS
         # First write the the name of all moving parameters
         all_moving_parameters = []
@@ -184,16 +195,6 @@ class ExperimentFileManager():
                     loc_dict_of_ExpP_MP[k].attrs['slot'] = self.XP.ExperimentalParameters['moving_parameters'][k]['slot']
         ExpP.attrs['all_moving_parameters'] = all_moving_parameters
 
-        # Save the Fastchannels dictionary
-        if 'Fastchannels' in self.XP.ExperimentalParameters['Info'].keys():
-            Fastchannels = []
-            self.ExpPInfoExceptions.append('Fastchannels')
-            for e in self.XP.ExperimentalParameters['Info']['Fastchannels']:
-                index = e
-                DAC_column = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][0]
-                DAC_row = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][1]
-                Fastchannels.append([index,DAC_column,DAC_row])
-            ExpPFastS.attrs['Fastchannels'] = np.asarray(Fastchannels)
 
         # Save the rest
         for e in self.XP.ExperimentalParameters['Info'].keys():

@@ -29,19 +29,24 @@ class h5_IO:
                     XP.ExperimentalParameters['moving_parameters'][mp]['slot'] = f[group_name]['ExperimentalParameters'][mp].attrs['slot']
 
     def Read_FastSequence(self, filepath, filename, XP, group_name):
-
+        XP.ExperimentalParameters['Info']['Fastchannels'] = {}
         with h5py.File(filepath + os.sep + filename,'r') as f:
             XP.ExperimentalParameters['Fastsequence'] = f.get(group_name + '/ExperimentalParameters/Fastsequence')[:]
             for k in f[group_name]['ExperimentalParameters']['Fastsequence'].attrs.keys():
-                XP.ExperimentalParameters['Info'][k] = f[group_name]['ExperimentalParameters']['Fastsequence'].attrs[k]
-
+                if k != 'Fastchannels':
+                    XP.ExperimentalParameters['Info'][k] = f[group_name]['ExperimentalParameters']['Fastsequence'].attrs[k]
+                else:
+                    Fastchannels = f[group_name]['ExperimentalParameters']['Fastsequence'].attrs['Fastchannels']
+                    Fastchannels = list(Fastchannels)
+                    Fastchannels = [list(x) for x in Fastchannels]
+                    #Fastchannels = Fastchannels.reshape(Fastchannels.shape[1],Fastchannels.shape[0])
+                    for index, DAC_column, DAC_row in Fastchannels:
+                        XP.ExperimentalParameters['Info']['Fastchannels'][index] = [DAC_column,DAC_row]
 
     def Read_header(self, filepath, filename, XP, group_name):
-
         with h5py.File(filepath + os.sep + filename,'r') as f:
             for k in f[group_name]['ExperimentalParameters'].attrs.keys():
                 XP.ExperimentalParameters['Info'][k] = f[group_name]['ExperimentalParameters'].attrs[k]
 
             for k in f[group_name].attrs.keys():
-                #print k
                 XP.FileInfo[k] = f[group_name].attrs[k]

@@ -49,7 +49,7 @@ class ExperimentFileManager():
             # read the main file
             self.CurrentFileIO.Read_header(filepath, filename, self.XP, group_name)
             self.CurrentFileIO.Read_data(filepath, filename, self.XP, group_name)
-
+            #print len(self.XP.ExperimentalParameters['Info']['Fastchannels'].keys())
             # read the fast sequence file if it exists
             self.CurrentFileIO.Read_FastSequence(filepath, filename, self.XP, group_name)
 
@@ -74,6 +74,7 @@ class ExperimentFileManager():
         # Give the file version
         f.attrs['fileversion'] = self.fileversion
 
+        #############################
         # Create the main group
         # If it exists already, ask the user what to do
         self.FLAG_replacing_existing_group_authorization = False
@@ -104,16 +105,6 @@ class ExperimentFileManager():
                 return
         else:
             group = f.create_group(group_name)
-        # if group_name in f.keys():
-        #     answer = raw_input("Do you want to replace the existing group? y/n")
-        #     if answer == 'y':
-        #         del f[group_name]
-        #         group = f.create_group(group_name)
-        #     else:
-        #         f.close()
-        #         return
-        # else:
-        #     group = f.create_group(group_name)
 
         # Write the FileInfo entries as attributes of the group "group_name"
         for e in self.XP.FileInfo.keys():
@@ -121,11 +112,11 @@ class ExperimentFileManager():
 
         # Create the parameters and data datasets
 
+        #############################
         # ExperimentalData
         chunkSize = [1]*len(self.XP.ExperimentalData['dimensions'])
         chunkSize[0] = self.XP.ExperimentalData['dimensions'][0]
         chunkSize[1] = self.XP.ExperimentalData['dimensions'][1]
-        #chunkSize[2] = self.XP.ExperimentalData['dimensions'][2]
 
         # ExperimentalDataSet abbreviated as ExpD
         self.ExpDExceptions = []
@@ -143,6 +134,7 @@ class ExperimentFileManager():
             if e not in self.ExpDExceptions:
                 ExpD.attrs[e] = self.XP.ExperimentalData[e]
 
+        #############################
         # ExperimentalParameters group as ExpP
         ExpP = f.create_group(group_name + '/ExperimentalParameters')
 
@@ -163,12 +155,13 @@ class ExperimentFileManager():
         if 'Fastchannels' in self.XP.ExperimentalParameters['Info'].keys():
             Fastchannels = []
             self.ExpPInfoExceptions.append('Fastchannels')
-            for e in self.XP.ExperimentalParameters['Info']['Fastchannels']:
+            for e in self.XP.ExperimentalParameters['Info']['Fastchannels'].keys():
                 index = e
                 DAC_column = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][0]
                 DAC_row = self.XP.ExperimentalParameters['Info']['Fastchannels'][e][1]
                 Fastchannels.append([index,DAC_column,DAC_row])
-            ExpPFastS.attrs['Fastchannels'] = np.asarray(Fastchannels)
+            ExpPFastS.attrs['Fastchannels'] = Fastchannels
+            #ExpPFastS.attrs['Fastchannels'] = np.asarray(Fastchannels)
 
         # Save all parameters as DS
         # First write the the name of all moving parameters

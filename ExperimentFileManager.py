@@ -72,7 +72,8 @@ class ExperimentFileManager():
         f = h5py.File(filepathname,'a')
 
         # Give the file version
-        f.attrs['fileversion'] = self.fileversion
+        f.attrs['WSPversion'] = self.fileversion
+        f.attrs['WSPPython'] = True
 
         #############################
         # Create the main group
@@ -193,6 +194,16 @@ class ExperimentFileManager():
         for e in self.XP.ExperimentalParameters['Info'].keys():
             if e not in self.ExpPInfoExceptions:
                 ExpP.attrs[e] = self.XP.ExperimentalParameters['Info'][e]
+
+    def checkFile(self,FileInfo):
+        with h5py.File(FileInfo['currentFilePath'] + os.sep + FileInfo['currentFileName'],'r') as f:
+            filekeys = f.attrs.keys()
+            if 'WSPPython' in filekeys:
+                FileInfo['WSPPython'] = f.attrs['WSPPython']
+                FileInfo['WSPversion'] = f.attrs['WSPversion']
+                FileInfo['AvailableGroups'] = f.keys()
+            else:
+                FileInfo['WSPPython'] = False
 
 
 

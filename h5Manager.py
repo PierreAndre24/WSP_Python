@@ -45,8 +45,12 @@ class h5_IO:
 
     def Read_header(self, filepath, filename, XP, group_name):
         with h5py.File(filepath + os.sep + filename,'r') as f:
+
             for k in f[group_name]['ExperimentalParameters'].attrs.keys():
                 XP.ExperimentalParameters['Info'][k] = f[group_name]['ExperimentalParameters'].attrs[k]
 
             for k in f[group_name].attrs.keys():
                 XP.FileInfo[k] = f[group_name].attrs[k]
+                
+            XP.WSPPython = f.attrs['WSPPython']
+            XP.WSPversion = f.attrs['WSPversion']

@@ -57,7 +57,8 @@ class ExperimentFileManager():
             filepath = '',\
             filename = '',\
             group_name = 'raw_data',
-            force_overwrite = False):
+            force_overwrite = False,
+            ExperimentType = 'undefined'):
 
         #File name
         if filepath == '':
@@ -74,6 +75,7 @@ class ExperimentFileManager():
         # Give the file version
         f.attrs['WSPversion'] = self.fileversion
         f.attrs['WSPPython'] = True
+        f.attrs['ExperimentType'] = ExperimentType
 
         #############################
         # Create the main group
@@ -195,15 +197,16 @@ class ExperimentFileManager():
             if e not in self.ExpPInfoExceptions:
                 ExpP.attrs[e] = self.XP.ExperimentalParameters['Info'][e]
 
-    def checkFile(self,FileInfo):
-        with h5py.File(FileInfo['currentFilePath'] + os.sep + FileInfo['currentFileName'],'r') as f:
+    def checkFile(self,WSPPreferences):
+        with h5py.File(WSPPreferences['currentFilePath'] + os.sep + WSPPreferences['currentFileName'],'r') as f:
             filekeys = f.attrs.keys()
             if 'WSPPython' in filekeys:
-                FileInfo['WSPPython'] = f.attrs['WSPPython']
-                FileInfo['WSPversion'] = f.attrs['WSPversion']
-                FileInfo['AvailableGroups'] = f.keys()
+                WSPPreferences['WSPPython'] = f.attrs['WSPPython']
+                WSPPreferences['WSPversion'] = f.attrs['WSPversion']
+                WSPPreferences['AvailableGroups'] = f.keys()
+                WSPPreferences['ExperimentType'] = f.attrs['ExperimentType']
             else:
-                FileInfo['WSPPython'] = False
+                WSPPreferences['WSPPython'] = False
 
 
 

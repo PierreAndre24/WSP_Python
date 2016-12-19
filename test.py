@@ -1,27 +1,29 @@
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+from PyQt5 import QtGui, QtCore
+from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QPushButton,
+                            QTabWidget, QVBoxLayout)
 import sys
 
 def main_UI():
 
-    app 	= QtGui.QApplication(sys.argv)
-    tabs	= QtGui.QTabWidget()
+    app 	= QApplication(sys.argv)
+    tabs	= QTabWidget()
 
     # Create tabs
-    tab1	= QtGui.QWidget()
-    tab2	= QtGui.QWidget()
-    tab3	= QtGui.QWidget()
+    tab1	= QWidget()
+    tab2	= QWidget()
+    tab3	= QWidget()
 
     # Resize width and height
     tabs.resize(400, 250)
 
     # Set layout of first tab
-    vBoxlayout	= QtGui.QVBoxLayout()
-    pushButton_Load = QtGui.QPushButton("Load")
-    pushButton_Save = QtGui.QPushButton("Save")
-    pushButton_SaveAs = QtGui.QPushButton("Save As")
-    pushButton_JoinLastDim = QtGui.QPushButton("Join Last Dimension")
-    pushButton_Concatenate = QtGui.QPushButton("Concatenate")
+    vBoxlayout	= QVBoxLayout()
+    pushButton_Load = QPushButton("Load")
+    pushButton_Save = QPushButton("Save")
+    pushButton_SaveAs = QPushButton("Save As")
+    pushButton_JoinLastDim = QPushButton("Join Last Dimension")
+    pushButton_Concatenate = QPushButton("Concatenate")
+    pushButton_Concatenate.clicked.connect(closebutton)
     vBoxlayout.addWidget(pushButton_Load)
     vBoxlayout.addWidget(pushButton_Save)
     vBoxlayout.addWidget(pushButton_SaveAs)
@@ -39,6 +41,9 @@ def main_UI():
     tabs.show()
 
     sys.exit(app.exec_())
+
+def closebutton():
+    tab1.close()
 
 
 if __name__ == '__main__':

@@ -51,6 +51,7 @@ class h5_IO:
 
             for k in f[group_name].attrs.keys():
                 XP.FileInfo[k] = f[group_name].attrs[k]
-                
+
             XP.WSPPython = f.attrs['WSPPython']
             XP.WSPversion = f.attrs['WSPversion']
+            XP.ExperimentType = f.attrs['ExperimentType']

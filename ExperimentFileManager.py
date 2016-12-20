@@ -72,10 +72,10 @@ class ExperimentFileManager():
         # Create the h5 file
         f = h5py.File(filepathname,'a')
 
-        # Give the file version
-        f.attrs['WSPversion'] = self.fileversion
-        f.attrs['WSPPython'] = True
-        f.attrs['ExperimentType'] = ExperimentType
+        # # Give the file version
+        # f.attrs['WSPversion'] = self.fileversion
+        # f.attrs['WSPPython'] = True
+        # f.attrs['ExperimentType'] = ExperimentType
 
         #############################
         # Create the main group
@@ -197,16 +197,19 @@ class ExperimentFileManager():
             if e not in self.ExpPInfoExceptions:
                 ExpP.attrs[e] = self.XP.ExperimentalParameters['Info'][e]
 
-    def checkFile(self,WSPPreferences):
-        with h5py.File(WSPPreferences['currentFilePath'] + os.sep + WSPPreferences['currentFileName'],'r') as f:
+    def checkFile(self,filepath,filename,filePreferences):
+        with h5py.File(filepath + os.sep + filename,'r') as f:
             filekeys = f.attrs.keys()
             if 'WSPPython' in filekeys:
-                WSPPreferences['WSPPython'] = f.attrs['WSPPython']
-                WSPPreferences['WSPversion'] = f.attrs['WSPversion']
-                WSPPreferences['AvailableGroups'] = f.keys()
-                WSPPreferences['ExperimentType'] = f.attrs['ExperimentType']
+                filePreferences['WSPPython'] = f.attrs['WSPPython']
+                filePreferences['WSPversion'] = f.attrs['WSPversion']
+                filePreferences['AvailableGroups'] = f.keys()
+                filePreferences['ExperimentType'] = f.attrs['ExperimentType']
             else:
-                WSPPreferences['WSPPython'] = False
+                filePreferences['WSPPython'] = False
+
+        for k in filePreferences.keys():
+            self.XP[k] = filePreferences[k]
 
 
 

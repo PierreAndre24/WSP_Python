@@ -2,7 +2,7 @@ import sys, os, h5py
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QPushButton,
                             QAction, QFileDialog, QInputDialog, QFormLayout,
                             QScrollArea, QVBoxLayout, QTabWidget)
-from QWidgetUSPM import QWidgetUSPM
+from GUI_Preferences import filePreferencesGUI
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import MultiDimExperiment, ExperimentFileManager
@@ -22,10 +22,13 @@ class App(QMainWindow):
         self.show()
 
         self.WSPPreferences = {}
-        self.openPreferences()
+        self.filePreferences = {}
+        self.loadPreferences()
         self.XP = MultiDimExperiment.MultiDimExperiment()
         self.FM = ExperimentFileManager.ExperimentFileManager(self.XP)
 
+    ################################
+    # Init interface
     def initUserMenu(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -51,11 +54,11 @@ class App(QMainWindow):
         fileMenu.addAction(loadsingleButton)
 
         # save a file
-        savesingleButton = QAction(QIcon('exit24.png'), 'Save file', self)
-        savesingleButton.setShortcut('Ctrl+S')
-        savesingleButton.setStatusTip('Save file')
-        savesingleButton.triggered.connect(self.saveAsFileNameDialog)
-        fileMenu.addAction(savesingleButton)
+        saveasButton = QAction(QIcon('exit24.png'), 'Save file', self)
+        saveasButton.setShortcut('Ctrl+S')
+        saveasButton.setStatusTip('Save file')
+        saveasButton.triggered.connect(self.saveAsFileNameDialog)
+        fileMenu.addAction(saveasButton)
 
 
         # convert a file or multiple files
@@ -64,6 +67,13 @@ class App(QMainWindow):
         convertsingleButton.setStatusTip('Convert files')
         convertsingleButton.triggered.connect(self.convertFilesDialog)
         fileMenu.addAction(convertsingleButton)
+
+        # File preferences
+        filePreferencesButton = QAction(QIcon('exit24.png'), 'File preferences', self)
+        filePreferencesButton.setShortcut('Ctrl+C')
+        filePreferencesButton.setStatusTip('File preferences')
+        filePreferencesButton.triggered.connect(self.filePreferencesDialog)
+        fileMenu.addAction(filePreferencesButton)
         fileMenu.addSeparator()
 
         # system preferences
@@ -96,14 +106,17 @@ class App(QMainWindow):
 
         print self.tabs.count()
 
+
+    ################################
+    # Tab selection and tab layouts
     def selectUserTabs(self):
         for i in range(self.tabs.count()):
             self.tabs.removeTab(0)
-        if self.WSPPreferences['ExperimentType'] == 'uspm':
+        if self.filePreferences['ExperimentType'] == 'uspm':
             # Add tabs
             self.tabs.addTab(self.TA_UItab,"Single trace analysis")
             self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
-        elif self.WSPPreferences['ExperimentType'] == 'ipss':
+        elif self.filePreferences['ExperimentType'] == 'ipss':
             # Add tabs
             self.tabs.addTab(self.TA_UItab,"Single trace analysis")
             self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
@@ -114,7 +127,6 @@ class App(QMainWindow):
             self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
             self.tabs.addTab(self.IPSS_UItab,"Isol.Pos.: Single Spin")
 
-
     def create_TA_UItab(self):
         self.TA_UItab = QWidget() # Single trace analysis tab
 
@@ -124,6 +136,9 @@ class App(QMainWindow):
     def create_IPSS_UItab(self):
         self.IPSS_UItab = QWidget() #microsecond pulse map tab
 
+
+    ################################
+    # Menu methods
     def openFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -140,20 +155,29 @@ class App(QMainWindow):
 
             currentFilePath,currentFileName = os.path.split(filename[0])
             self.WSPPreferences['currentFilePath'] = currentFilePath
-            self.WSPPreferences['currentFileName'] = currentFileName
+            self.WSPPreferences['currentFileName'] = currentFileName[0]
+
 
             extension = self.WSPPreferences['currentFileName'].split('.')
             extension = extension[-1]
             self.XP = MultiDimExperiment.MultiDimExperiment()
             if extension == 'lvm':
                 self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'])
-                self.FM.Read_Experiment_File(filepath = self.WSPPreferences['currentFilePath'],\
-                                    filename = self.WSPPreferences['currentFileName'],\
-                                    read_multiple_files = multiple_files)
+                # ask for group name
+                text, ok = QInputDialog.getText(self, 'Group name', 'Enter the group name:')
+                if ok:
+                    self.filePreferences['ExperimentType'] = text
+                    self.FM.Read_Experiment_File(\
+                            filepath = self.WSPPreferences['currentFilePath'],\
+                            filename = self.WSPPreferences['currentFileName'],\
+                            read_multiple_files = multiple_files)
             elif extension == 'h5':
                 self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'])
-                self.FM.checkFile(self.WSPPreferences)
-                if self.WSPPreferences['WSPPython']:
+                self.FM.checkFile(
+                    self.WSPPreferences['currentFilePath'],\
+                    self.WSPPreferences['currentFileName'],\
+                    self.filePreferences)
+                if self.filePreferences['WSPPython']:
                     self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'] + \
                         '. WSPPython file checked.')
                     item, ok = QInputDialog.getItem(self, "Select a group",\
@@ -187,19 +211,19 @@ class App(QMainWindow):
             if ok:
                 self.WSPPreferences['currentGroupName'] = text
 
-                # ask for ExperimentType
-                text, ok = QInputDialog.getText(self, 'Experiment type', 'Enter the experiment type:')
-                if ok:
-                    self.WSPPreferences['ExperimentType'] = text
-                    self.statusBar().showMessage('Saving ' + futureFileName + '/' + self.WSPPreferences['currentGroupName'])
-                    self.FM.Write_Experiment_to_h5(filepath = futureFilePath,\
-                                                   filename = futureFileName, \
-                                                   group_name = self.WSPPreferences['currentGroupName'], \
-                                                   force_overwrite = True,
-                                                   ExperimentType = self.WSPPreferences['ExperimentType'])
-                    self.WSPPreferences['currentFilePath'] = futureFilePath
-                    self.WSPPreferences['currentFileName'] = futureFileName
-                    self.statusBar().showMessage(futureFileName + '/' + self.WSPPreferences['currentGroupName']  + ' saved.')
+                # # ask for ExperimentType
+                # text, ok = QInputDialog.getText(self, 'Experiment type', 'Enter the experiment type:')
+                # if ok:
+                #     self.filePreferences['ExperimentType'] = text
+                self.statusBar().showMessage('Saving ' + futureFileName + '/' + self.WSPPreferences['currentGroupName'])
+                self.FM.Write_Experiment_to_h5(filepath = futureFilePath,\
+                                               filename = futureFileName, \
+                                               group_name = self.WSPPreferences['currentGroupName'], \
+                                               force_overwrite = True,
+                                               ExperimentType = self.filePreferences['ExperimentType'])
+                self.WSPPreferences['currentFilePath'] = futureFilePath
+                self.WSPPreferences['currentFileName'] = futureFileName
+                self.statusBar().showMessage(futureFileName + '/' + self.WSPPreferences['currentGroupName']  + ' saved.')
 
     def convertFilesDialog(self):
         options = QFileDialog.Options()
@@ -238,7 +262,7 @@ class App(QMainWindow):
                     # ask for ExperimentType
                     text, ok = QInputDialog.getText(self, 'Experiment type', 'Enter the experiment type:')
                     if ok:
-                        self.WSPPreferences['ExperimentType'] = text
+                        self.filePreferences['ExperimentType'] = text
 
                         self.statusBar().showMessage('Opening: ' + self.WSPPreferences['currentFileName'])
                         self.FM.Read_Experiment_File(filepath = self.WSPPreferences['currentFilePath'],\
@@ -249,15 +273,22 @@ class App(QMainWindow):
                                                        filename = futureFileName, \
                                                        group_name = self.WSPPreferences['currentGroupName'], \
                                                        force_overwrite = True,
-                                                       ExperimentType = self.WSPPreferences['ExperimentType'])
+                                                       ExperimentType = self.filePreferences['ExperimentType'])
                         self.statusBar().showMessage(futureFileName + ' saved.')
                         self.WSPPreferences['currentFilePath'] = futureFilePath
                         self.WSPPreferences['currentFileName'] = futureFileName
 
+    def filePreferencesDialog(self):
+        self.filePreferences = {'WSPPython':True,'fileversion':1.0,'ExperimentType':'uspm'}
+        if 'WSPPython' in self.filePreferences.keys():
+            dia = filePreferencesGUI(filePreferences=self.filePreferences)
+            if dia.result():
+                self.filePreferences = dia.filePreferences
+
     def WSPPreferences(self):
         pass
 
-    def openPreferences(self):
+    def loadPreferences(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         prefFile = dirname + os.sep + 'preferences.h5'
         # if not os.path.isdir(prefFile):

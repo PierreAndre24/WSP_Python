@@ -209,7 +209,7 @@ class ExperimentFileManager():
                 filePreferences['WSPPython'] = False
 
         for k in filePreferences.keys():
-            self.XP[k] = filePreferences[k]
+            self.XP.FileInfo[k] = filePreferences[k]
 
 
 

@@ -1,11 +1,13 @@
 import sys, os, h5py
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QPushButton,
                             QAction, QFileDialog, QInputDialog, QFormLayout,
-                            QScrollArea, QVBoxLayout, QTabWidget)
+                            QScrollArea, QVBoxLayout, QTextEdit, QGridLayout,
+                            QFrame)
 from GUI_Preferences import filePreferencesGUI
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import MultiDimExperiment, ExperimentFileManager
+from WSPTruncateArray import WSPTruncateArray
 
 class App(QMainWindow):
 
@@ -16,16 +18,17 @@ class App(QMainWindow):
         self.top = 10
         self.width = 640
         self.height = 400
-        self.initUserMenu()
-        self.initUserTabs() # main QWidget
-        self.setCentralWidget(self.tabs)
-        self.show()
 
         self.WSPPreferences = {}
         self.filePreferences = {}
         self.loadPreferences()
         self.XP = MultiDimExperiment.MultiDimExperiment()
         self.FM = ExperimentFileManager.ExperimentFileManager(self.XP)
+
+        self.initUserMenu()
+        self.initMainGL() # main QWidget
+
+        self.show()
 
     ################################
     # Init interface
@@ -80,7 +83,7 @@ class App(QMainWindow):
         preferencesButton = QAction(QIcon('exit24.png'), 'Preferences', self)
         preferencesButton.setStatusTip('System preferences')
         preferencesButton.setShortcut('Ctrl+,')
-        preferencesButton.triggered.connect(self.WSPPreferences)
+        preferencesButton.triggered.connect(self.call_WSPPreferences)
         fileMenu.addAction(preferencesButton)
         fileMenu.addSeparator()
 
@@ -91,50 +94,51 @@ class App(QMainWindow):
         exitButton.triggered.connect(self.closeApplication)
         fileMenu.addAction(exitButton)
 
-    def initUserTabs(self):
-        self.tabs	= QTabWidget()
+        ####################
+        # Help menu buttons
 
-        # Create tabs
-        self.create_TA_UItab() #Trace Analysis
-        self.create_IPPM_UItab() #Isolated Position, Pulse Map
-        self.create_IPSS_UItab() #Isolated Position, Single Spin
+        # load a file (or multiple_files)
+        testButton = QAction(QIcon('exit24.png'), 'Test', self)
+        testButton.setStatusTip('Test something')
+        testButton.triggered.connect(self.testFunction)
+        helpMenu.addAction(testButton)
 
-        # Add tabs
-        self.tabs.addTab(self.TA_UItab,"Single trace analysis")
-        self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
-        self.tabs.addTab(self.IPSS_UItab,"Isol.Pos.: Single Spin")
-
-        print self.tabs.count()
+    def initMainGL(self):
+        # self.setCentralWidget(QFrame())
+        self.mainGL = QGridLayout()
+        self.mainW = QWidget(self)
 
 
-    ################################
-    # Tab selection and tab layouts
-    def selectUserTabs(self):
-        for i in range(self.tabs.count()):
-            self.tabs.removeTab(0)
-        if self.filePreferences['ExperimentType'] == 'uspm':
-            # Add tabs
-            self.tabs.addTab(self.TA_UItab,"Single trace analysis")
-            self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
-        elif self.filePreferences['ExperimentType'] == 'ipss':
-            # Add tabs
-            self.tabs.addTab(self.TA_UItab,"Single trace analysis")
-            self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
-            self.tabs.addTab(self.IPSS_UItab,"Isol.Pos.: Single Spin")
-        else:
-            # Add tabs
-            self.tabs.addTab(self.TA_UItab,"Single trace analysis")
-            self.tabs.addTab(self.IPPM_UItab,"Isol.Pos.: dI")
-            self.tabs.addTab(self.IPSS_UItab,"Isol.Pos.: Single Spin")
 
-    def create_TA_UItab(self):
-        self.TA_UItab = QWidget() # Single trace analysis tab
+        # Create widgets
+        self.WSPWidgets = {}
+        self.WSPWidgets['Truncate'] = WSPTruncateArray()
 
-    def create_IPPM_UItab(self):
-        self.IPPM_UItab = QWidget() #microsecond pulse map tab
 
-    def create_IPSS_UItab(self):
-        self.IPSS_UItab = QWidget() #microsecond pulse map tab
+        # Position widegets
+        self.mainGL.addWidget(self.WSPWidgets['Truncate'],1,1,1,1)
+        # self.create_TA_UI() #Trace Analysis
+        # self.create_IPPM_UI() #Isolated Position, Pulse Map
+        # self.create_IPSS_UI() #Isolated Position, Single Spin
+
+        # to filter out the initial call
+        if 'ExperimentType' in self.filePreferences:
+            if self.filePreferences['ExperimentType'] == 'uspm':
+                # Add tabs
+                print 'uspm'
+            elif self.filePreferences['ExperimentType'] == 'ipss':
+                # Add tabs
+                print 'ipss'
+            elif self.filePreferences['ExperimentType'] == 'ippm':
+                # Add tabs
+                print 'ippm'
+
+        self.mainW.setLayout(self.mainGL)
+        self.setCentralWidget(self.mainW)
+        # self.setLayout(self.mainGL)
+
+    def refrefhMainGL(self):
+        self.WSPWidgets['Truncate'].updateLayout(self.XP.ExperimentalData['dimensions'])
 
 
     ################################
@@ -155,12 +159,12 @@ class App(QMainWindow):
 
             currentFilePath,currentFileName = os.path.split(filename[0])
             self.WSPPreferences['currentFilePath'] = currentFilePath
-            self.WSPPreferences['currentFileName'] = currentFileName[0]
-
+            self.WSPPreferences['currentFileName'] = currentFileName
 
             extension = self.WSPPreferences['currentFileName'].split('.')
             extension = extension[-1]
             self.XP = MultiDimExperiment.MultiDimExperiment()
+
             if extension == 'lvm':
                 self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'])
                 # ask for group name
@@ -181,7 +185,7 @@ class App(QMainWindow):
                     self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'] + \
                         '. WSPPython file checked.')
                     item, ok = QInputDialog.getItem(self, "Select a group",\
-                                "List of groups", self.WSPPreferences['AvailableGroups'], 0, False)
+                                "List of groups", self.filePreferences['AvailableGroups'], 0, False)
                     if ok:
                         self.FM.Read_Experiment_File(filepath = self.WSPPreferences['currentFilePath'],\
                                     filename = self.WSPPreferences['currentFileName'],\
@@ -189,7 +193,7 @@ class App(QMainWindow):
             else:
                 return
             self.statusBar().showMessage(self.WSPPreferences['currentFileName'] + ' loaded.')
-            self.selectUserTabs()
+            self.refrefhMainGL()
 
     def saveAsFileNameDialog(self):
         options = QFileDialog.Options()
@@ -278,6 +282,8 @@ class App(QMainWindow):
                         self.WSPPreferences['currentFilePath'] = futureFilePath
                         self.WSPPreferences['currentFileName'] = futureFileName
 
+                        self.refrefhMainGL()
+
     def filePreferencesDialog(self):
         self.filePreferences = {'WSPPython':True,'fileversion':1.0,'ExperimentType':'uspm'}
         if 'WSPPython' in self.filePreferences.keys():
@@ -285,7 +291,7 @@ class App(QMainWindow):
             if dia.result():
                 self.filePreferences = dia.filePreferences
 
-    def WSPPreferences(self):
+    def call_WSPPreferences(self):
         pass
 
     def loadPreferences(self):
@@ -307,14 +313,25 @@ class App(QMainWindow):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         prefFile = dirname + os.sep + 'preferences.h5'
         f = h5py.File(prefFile,'a')
-        # Give the file version
-        f.attrs['currentFilePath'] = self.WSPPreferences['currentFilePath']
-        f.close()
 
+        ###############################
+        # Menu information
+        f.attrs['currentFilePath'] = self.WSPPreferences['currentFilePath']
+
+        ###############################
+        # Tabs
+        # we save preferences dependent on ExperimentType
+        # Tabs -
+
+        f.close()
 
     def closeApplication(self):
         self.savePreferences()
         self.close()
+
+    def testFunction(self):
+        for t in self.WSPWidgets.keys():
+            print t + ' said ' + self.WSPWidgets[t].toPlainText()
 
     def preferences(self):
         pass

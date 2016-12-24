@@ -19,26 +19,27 @@ class WSPTruncateArray(QWidget):
 
         # put the new widgets
         self.originalRanges = originalRanges
+        
         for dim in range(len(self.originalRanges)):
             selectionWidgetCurrentDim = []
             label = QLabel('Dimension ' + str(dim))
+            selectionWidgetCurrentDim.append(label)
             self.grid.addWidget(label,dim,0,1,1)
 
             rangetxt = [str(x) for x in range(self.originalRanges[dim])]
             combo_start = QComboBox()
             combo_start.addItems(rangetxt)
             combo_start.setCurrentIndex(0)
-            self.grid.addWidget(label,dim,1,1,1)
+            selectionWidgetCurrentDim.append(combo_start)
+            self.grid.addWidget(combo_start,dim,1,1,1)
 
             rangetxt = [str(x) for x in range(self.originalRanges[dim])]
             combo_end = QComboBox()
             combo_end.addItems(rangetxt)
             combo_end.setCurrentIndex(-1)
-            self.grid.addWidget(label,dim,2,1,1)
+            selectionWidgetCurrentDim.append(combo_end)
+            self.grid.addWidget(combo_end,dim,2,1,1)
 
-            selectionWidgetCurrentDim = [label, \
-                                         combo_start, \
-                                         combo_end]
             self.selectionWidget.append(selectionWidgetCurrentDim)
 
         self.setLayout(self.grid)

@@ -138,6 +138,8 @@ class App(QMainWindow):
         # self.setLayout(self.mainGL)
 
     def refrefhMainGL(self):
+        print self.XP.ExperimentalData.keys()
+        
         self.WSPWidgets['Truncate'].updateLayout(self.XP.ExperimentalData['dimensions'])
 
 

@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QWidget, QGridLayout, QToolButton, QLabel, QComboBox)
 
-from subGUI_Model import Model
+from gui.subGUI_Model import Model
 
 class WSPTruncateArray(QWidget):
     def __init__(self):
@@ -19,7 +19,7 @@ class WSPTruncateArray(QWidget):
 
         # put the new widgets
         self.originalRanges = originalRanges
-        
+
         for dim in range(len(self.originalRanges)):
             selectionWidgetCurrentDim = []
             label = QLabel('Dimension ' + str(dim))

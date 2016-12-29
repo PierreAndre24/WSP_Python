@@ -1,13 +1,15 @@
-import sys, os, h5py
+import sys, os, h5py, string
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QWidget, QPushButton,
                             QAction, QFileDialog, QInputDialog, QFormLayout,
                             QScrollArea, QVBoxLayout, QTextEdit, QGridLayout,
                             QFrame)
-from GUI_Preferences import filePreferencesGUI
+
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import MultiDimExperiment, ExperimentFileManager
-from WSPTruncateArray import WSPTruncateArray
+from libs.GUI_Preferences import filePreferencesGUI
+import libs.MultiDimExperiment as MultiDimExperiment
+import libs.ExperimentFileManager as ExperimentFileManager
+from gui.WSPTruncateArray import WSPTruncateArray
 
 class App(QMainWindow):
 
@@ -18,6 +20,14 @@ class App(QMainWindow):
         self.top = 10
         self.width = 640
         self.height = 400
+
+        app_icon = QtGui.QIcon()
+        app_icon.addFile('gui/icons/16x16.png', QtCore.QSize(16,16))
+        app_icon.addFile('gui/icons/24x24.png', QtCore.QSize(24,24))
+        app_icon.addFile('gui/icons/32x32.png', QtCore.QSize(32,32))
+        app_icon.addFile('gui/icons/48x48.png', QtCore.QSize(48,48))
+        app_icon.addFile('gui/icons/256x256.png', QtCore.QSize(256,256))
+        app.setWindowIcon(app_icon)
 
         self.WSPPreferences = {}
         self.filePreferences = {}
@@ -79,13 +89,13 @@ class App(QMainWindow):
         fileMenu.addAction(filePreferencesButton)
         fileMenu.addSeparator()
 
-        # system preferences
-        preferencesButton = QAction(QIcon('exit24.png'), 'Preferences', self)
-        preferencesButton.setStatusTip('System preferences')
-        preferencesButton.setShortcut('Ctrl+,')
-        preferencesButton.triggered.connect(self.call_WSPPreferences)
-        fileMenu.addAction(preferencesButton)
-        fileMenu.addSeparator()
+        # # system preferences
+        # preferencesButton = QAction(QIcon('exit24.png'), 'Preferences', self)
+        # preferencesButton.setStatusTip('System preferences')
+        # preferencesButton.setShortcut('Ctrl+,')
+        # preferencesButton.triggered.connect(self.call_WSPPreferences)
+        # fileMenu.addAction(preferencesButton)
+        # fileMenu.addSeparator()
 
         # exit
         exitButton = QAction(QIcon('exit24.png'), 'Exit', self)
@@ -139,7 +149,7 @@ class App(QMainWindow):
 
     def refrefhMainGL(self):
         print self.XP.ExperimentalData.keys()
-        
+
         self.WSPWidgets['Truncate'].updateLayout(self.XP.ExperimentalData['dimensions'])
 
 
@@ -170,7 +180,7 @@ class App(QMainWindow):
             if extension == 'lvm':
                 self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'])
                 # ask for group name
-                text, ok = QInputDialog.getText(self, 'Group name', 'Enter the group name:')
+                text, ok = QInputDialog.getText(self, 'Experiment type', 'Enter the experiment type:')
                 if ok:
                     self.filePreferences['ExperimentType'] = text
                     self.FM.Read_Experiment_File(\
@@ -204,7 +214,8 @@ class App(QMainWindow):
             path = self.WSPPreferences['currentFilePath']
         else:
             path = ''
-        filename, ok = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()",path,"All Files (*);;Text Files (*.txt)", options=options)
+        defaultpath = path + os.sep + string.split(self.WSPPreferences['currentFileName'],'.')[0] + '.h5'
+        filename, ok = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()",defaultpath,"All Files (*);;Text Files (*.txt)", options=options)
         if ok:
             futureFilePath,futureFileName = os.path.split(filename)
             futureFileNameSplitted = futureFileName.split('.')
@@ -253,7 +264,9 @@ class App(QMainWindow):
                 path = self.WSPPreferences['currentFilePath']
             else:
                 path = ''
-            filename, ok = QFileDialog.getSaveFileName(self,"Save file",path,"All Files (*);;Text Files (*.txt)", options=options)
+
+            defaultpath = path + os.sep + string.split(self.WSPPreferences['currentFileName'],'.')[0] + '.h5'
+            filename, ok = QFileDialog.getSaveFileName(self,"Save file",defaultpath,"All Files (*);;Text Files (*.txt)", options=options)
             if ok:
                 futureFilePath,futureFileName = os.path.split(filename)
                 futureFileNameSplitted = futureFileName.split('.')
@@ -289,12 +302,12 @@ class App(QMainWindow):
     def filePreferencesDialog(self):
         self.filePreferences = {'WSPPython':True,'fileversion':1.0,'ExperimentType':'uspm'}
         if 'WSPPython' in self.filePreferences.keys():
-            dia = filePreferencesGUI(filePreferences=self.filePreferences)
+            dia = filePreferencesGUI(filePreferences = self.filePreferences)
             if dia.result():
                 self.filePreferences = dia.filePreferences
 
-    def call_WSPPreferences(self):
-        pass
+    # def call_WSPPreferences(self):
+    #     pass
 
     def loadPreferences(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -304,11 +317,24 @@ class App(QMainWindow):
         # Create the h5 file
         f = h5py.File(prefFile,'a')
 
+        ###############################
+        # Menu information
         # Give the file version
         if 'currentFilePath' in f.attrs.keys():
             self.WSPPreferences['currentFilePath'] = f.attrs['currentFilePath']
         else:
             self.WSPPreferences['currentFilePath'] = ''
+
+        gn = 'ExperimentTypes'
+        if gn in f.keys():
+            g = f[gn]
+            self.WSPPreferences[gn] = {}
+            for sgn in g.keys():
+                sg = g[sgn]
+                self.WSPPreferences[gn][sgn] = {}
+                self.WSPPreferences[gn][sgn]['definition'] = sg.attrs['definition']
+                self.WSPPreferences[gn][sgn]['pannels'] = sg.attrs['pannels']
+
         f.close()
 
     def savePreferences(self):
@@ -319,6 +345,33 @@ class App(QMainWindow):
         ###############################
         # Menu information
         f.attrs['currentFilePath'] = self.WSPPreferences['currentFilePath']
+
+        ###############################
+        # Experiment Type names and definitions
+        gn = 'ExperimentTypes'
+        if gn not in f.keys():
+            g = f.create_group(gn)
+        else:
+            g = f[gn]
+
+        # uspm
+        sgn = 'uspm'
+        if sgn not in f['ExperimentTypes'].keys():
+            sg = g.create_group(sgn)
+        else:
+            sg = g[sgn]
+        sg.attrs['definition'] = 'Micro second pulse map.'
+        sg.attrs['pannels'] = ['TimeTrace','usPulseMap']
+
+
+        # TT_AC_Tunneling
+        sgn = 'uspm'
+        if sgn not in f['ExperimentTypes'].keys():
+            sg = g.create_group(sgn)
+        else:
+            sg = g[sgn]
+        sg.attrs['definition'] = 'Time Trace Across Transition with tunneling event to be characterized.'
+        sg.attrs['pannels'] = ['TimeTrace']
 
         ###############################
         # Tabs

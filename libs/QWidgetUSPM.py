@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout
-from MultiDimExperiment import MultiDimExperiment
+from libs.MultiDimExperiment import MultiDimExperiment
 
 class QWidgetUSPM(QWidget):
   def __init__( self, parent = None, XP = MultiDimExperiment()):

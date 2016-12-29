@@ -1,6 +1,8 @@
 import os, h5py
 import numpy as np
-import h5Manager, LVMManager, MultiDimExperiment
+import libs.h5Manager as h5Manager
+import libs.LVMManager as LVMManager
+import libs.MultiDimExperiment as MultiDimExperiment
 
 class ExperimentFileManager():
 

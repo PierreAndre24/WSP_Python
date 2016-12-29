@@ -1,7 +1,7 @@
 from __future__ import division
 import string, re, os
 import numpy as np
-import sequence_splitter as seqspl
+import libs.sequence_splitter as seqspl
 
 class LVM_IO:
 

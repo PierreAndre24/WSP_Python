@@ -10,6 +10,7 @@ from libs.GUI_Preferences import filePreferencesGUI
 import libs.MultiDimExperiment as MultiDimExperiment
 import libs.ExperimentFileManager as ExperimentFileManager
 from gui.WSPTruncateArray import WSPTruncateArray
+from gui.WSP1Dplot import WSP1Dplot
 
 class App(QMainWindow):
 
@@ -21,12 +22,14 @@ class App(QMainWindow):
         self.width = 640
         self.height = 400
 
-        app_icon = QtGui.QIcon()
-        app_icon.addFile('gui/icons/16x16.png', QtCore.QSize(16,16))
-        app_icon.addFile('gui/icons/24x24.png', QtCore.QSize(24,24))
-        app_icon.addFile('gui/icons/32x32.png', QtCore.QSize(32,32))
-        app_icon.addFile('gui/icons/48x48.png', QtCore.QSize(48,48))
-        app_icon.addFile('gui/icons/256x256.png', QtCore.QSize(256,256))
+        app_icon = QIcon()
+        app_icon.addFile('gui/icons/16x16.png', QSize(16,16))
+        app_icon.addFile('gui/icons/24x24.png', QSize(24,24))
+        app_icon.addFile('gui/icons/32x32.png', QSize(32,32))
+        app_icon.addFile('gui/icons/64x64.png', QSize(64,64))
+        app_icon.addFile('gui/icons/128x128.png', QSize(128,128))
+        app_icon.addFile('gui/icons/256x256.png', QSize(256,256))
+        app_icon.addFile('gui/icons/512x512.png', QSize(512,512))
         app.setWindowIcon(app_icon)
 
         self.WSPPreferences = {}
@@ -43,6 +46,10 @@ class App(QMainWindow):
     ################################
     # Init interface
     def initUserMenu(self):
+        '''
+        Initializes entries of the menu bar
+        Todo: clean up icons
+        '''
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
@@ -114,19 +121,26 @@ class App(QMainWindow):
         helpMenu.addAction(testButton)
 
     def initMainGL(self):
+        '''
+        Initializes the main widget of the application, as well as all subGUI
+        that can be called later on.
+        To add a new widget, create it and give the position in the selection
+        loop.
+        Todo:
+        '''
+
         # self.setCentralWidget(QFrame())
         self.mainGL = QGridLayout()
         self.mainW = QWidget(self)
 
-
-
         # Create widgets
         self.WSPWidgets = {}
-        self.WSPWidgets['Truncate'] = WSPTruncateArray()
+        self.WSPWidgets['WSPTruncateArray'] = WSPTruncateArray()
+        self.WSPWidgets['WSP1Dplot'] = WSP1Dplot()
 
-
-        # Position widegets
-        self.mainGL.addWidget(self.WSPWidgets['Truncate'],1,1,1,1)
+        # Position widgets
+        self.mainGL.addWidget(self.WSPWidgets['WSP1Dplot'],1,1,1,1)
+        self.mainGL.addWidget(self.WSPWidgets['WSPTruncateArray'],2,1,1,1)
         # self.create_TA_UI() #Trace Analysis
         # self.create_IPPM_UI() #Isolated Position, Pulse Map
         # self.create_IPSS_UI() #Isolated Position, Single Spin
@@ -148,9 +162,13 @@ class App(QMainWindow):
         # self.setLayout(self.mainGL)
 
     def refrefhMainGL(self):
-        print self.XP.ExperimentalData.keys()
+        '''
+        Refresh elements of all subGUIs.
+        Todo:
+        '''
 
-        self.WSPWidgets['Truncate'].updateLayout(self.XP.ExperimentalData['dimensions'])
+        self.WSPWidgets['WSP1Dplot'].updateLayout(self.XP.ExperimentalData['dimensions'])
+        self.WSPWidgets['WSPTruncateArray'].updateLayout(self.XP.ExperimentalData['dimensions'])
 
 
     ################################

@@ -51,7 +51,7 @@ class ExperimentFileManager():
             # read the main file
             self.CurrentFileIO.Read_header(filepath, filename, self.XP, group_name)
             self.CurrentFileIO.Read_data(filepath, filename, self.XP, group_name)
-            #print len(self.XP.ExperimentalParameters['Info']['Fastchannels'].keys())
+            
             # read the fast sequence file if it exists
             self.CurrentFileIO.Read_FastSequence(filepath, filename, self.XP, group_name)
 

@@ -13,6 +13,12 @@ from gui.WSPTruncateArray import WSPTruncateArray
 from gui.WSP1Dplot import WSP1Dplot
 
 class App(QMainWindow):
+    '''
+    As it is now, a single experiment XP can be loaded at a time.
+    This should not be a limitation as one can save the result of a computation
+    in any file/group.
+    TODO: Concatenate function ...
+    '''
 
     def __init__(self):
         super(App,self).__init__()
@@ -35,8 +41,7 @@ class App(QMainWindow):
         self.WSPPreferences = {}
         self.filePreferences = {}
         self.loadPreferences()
-        self.XP = MultiDimExperiment.MultiDimExperiment()
-        self.FM = ExperimentFileManager.ExperimentFileManager(self.XP)
+        self.resetXP()
 
         self.initUserMenu()
         self.initMainGL() # main QWidget
@@ -166,10 +171,12 @@ class App(QMainWindow):
         Refresh elements of all subGUIs.
         Todo:
         '''
+        self.WSPWidgets['WSP1Dplot'].updateLayout(self.XP)
+        self.WSPWidgets['WSPTruncateArray'].updateLayout(self.XP)
 
-        self.WSPWidgets['WSP1Dplot'].updateLayout(self.XP.ExperimentalData['dimensions'])
-        self.WSPWidgets['WSPTruncateArray'].updateLayout(self.XP.ExperimentalData['dimensions'])
-
+    def resetXP(self):
+        self.XP = MultiDimExperiment.MultiDimExperiment()
+        self.FM = ExperimentFileManager.ExperimentFileManager(self.XP)
 
     ################################
     # Menu methods
@@ -193,7 +200,7 @@ class App(QMainWindow):
 
             extension = self.WSPPreferences['currentFileName'].split('.')
             extension = extension[-1]
-            self.XP = MultiDimExperiment.MultiDimExperiment()
+            self.resetXP
 
             if extension == 'lvm':
                 self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'])

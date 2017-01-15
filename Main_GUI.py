@@ -172,6 +172,7 @@ class App(QMainWindow):
         Todo:
         '''
         self.WSPWidgets['WSP1Dplot'].updateLayout(self.XP)
+        self.WSPWidgets['WSP1Dplot'].initial_values(self.filePreferences['ExperimentType'], None)
         self.WSPWidgets['WSPTruncateArray'].updateLayout(self.XP)
 
     def resetXP(self):
@@ -188,7 +189,9 @@ class App(QMainWindow):
         else:
             path = ''
         filename, ok = QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileName()", path,"All Files (*);;Python Files (*.py)", options=options)
-        if ok:
+        if not ok:
+            return
+        else:
             if len(filename)>1:
                 multiple_files = True
             else:
@@ -206,7 +209,9 @@ class App(QMainWindow):
                 self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'])
                 # ask for group name
                 text, ok = QInputDialog.getText(self, 'Experiment type', 'Enter the experiment type:')
-                if ok:
+                if not ok:
+                    return
+                else:
                     self.filePreferences['ExperimentType'] = text
                     self.FM.Read_Experiment_File(\
                             filepath = self.WSPPreferences['currentFilePath'],\
@@ -218,12 +223,16 @@ class App(QMainWindow):
                     self.WSPPreferences['currentFilePath'],\
                     self.WSPPreferences['currentFileName'],\
                     self.filePreferences)
-                if self.filePreferences['WSPPython']:
+                if not self.filePreferences['WSPPython']:
+                    return
+                else:
                     self.statusBar().showMessage('Opening ' + self.WSPPreferences['currentFileName'] + \
                         '. WSPPython file checked.')
                     item, ok = QInputDialog.getItem(self, "Select a group",\
                                 "List of groups", self.filePreferences['AvailableGroups'], 0, False)
-                    if ok:
+                    if not ok:
+                        return
+                    else:
                         self.FM.Read_Experiment_File(filepath = self.WSPPreferences['currentFilePath'],\
                                     filename = self.WSPPreferences['currentFileName'],\
                                     group_name = item)
@@ -241,7 +250,9 @@ class App(QMainWindow):
             path = ''
         defaultpath = path + os.sep + string.split(self.WSPPreferences['currentFileName'],'.')[0] + '.h5'
         filename, ok = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()",defaultpath,"All Files (*);;Text Files (*.txt)", options=options)
-        if ok:
+        if not ok:
+            return
+        else:
             futureFilePath,futureFileName = os.path.split(filename)
             futureFileNameSplitted = futureFileName.split('.')
             if futureFileNameSplitted[-1] != 'h5':
@@ -250,7 +261,9 @@ class App(QMainWindow):
 
             # ask for group name
             text, ok = QInputDialog.getText(self, 'Group name', 'Enter the group name:')
-            if ok:
+            if not ok:
+                return
+            else:
                 self.WSPPreferences['currentGroupName'] = text
 
                 # # ask for ExperimentType
@@ -292,7 +305,9 @@ class App(QMainWindow):
 
             defaultpath = path + os.sep + string.split(self.WSPPreferences['currentFileName'],'.')[0] + '.h5'
             filename, ok = QFileDialog.getSaveFileName(self,"Save file",defaultpath,"All Files (*);;Text Files (*.txt)", options=options)
-            if ok:
+            if not ok:
+                return
+            else:
                 futureFilePath,futureFileName = os.path.split(filename)
                 futureFileNameSplitted = futureFileName.split('.')
                 if futureFileNameSplitted[-1] != 'h5':
@@ -300,12 +315,16 @@ class App(QMainWindow):
 
                 # ask for group name
                 text, ok = QInputDialog.getText(self, 'Group name', 'Enter the group name:')
-                if ok:
+                if not ok:
+                    return
+                else:
                     self.WSPPreferences['currentGroupName'] = text
 
                     # ask for ExperimentType
                     text, ok = QInputDialog.getText(self, 'Experiment type', 'Enter the experiment type:')
-                    if ok:
+                    if not ok:
+                        return
+                    else:
                         self.filePreferences['ExperimentType'] = text
 
                         self.statusBar().showMessage('Opening: ' + self.WSPPreferences['currentFileName'])

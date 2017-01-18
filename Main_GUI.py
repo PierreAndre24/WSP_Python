@@ -9,7 +9,7 @@ from PyQt5.QtCore import *
 from libs.GUI_Preferences import filePreferencesGUI
 import libs.MultiDimExperiment as MultiDimExperiment
 import libs.ExperimentFileManager as ExperimentFileManager
-from gui.WSPTruncateArray import WSPTruncateArray
+from gui.WSPBasicArrayOps import WSPBasicArrayOps
 from gui.WSP1Dplot import WSP1Dplot
 
 class App(QMainWindow):
@@ -140,12 +140,12 @@ class App(QMainWindow):
 
         # Create widgets
         self.WSPWidgets = {}
-        self.WSPWidgets['WSPTruncateArray'] = WSPTruncateArray()
+        self.WSPWidgets['WSPBasicArrayOps'] = WSPBasicArrayOps()
         self.WSPWidgets['WSP1Dplot'] = WSP1Dplot()
 
         # Position widgets
         self.mainGL.addWidget(self.WSPWidgets['WSP1Dplot'],1,1,1,1)
-        self.mainGL.addWidget(self.WSPWidgets['WSPTruncateArray'],2,1,1,1)
+        self.mainGL.addWidget(self.WSPWidgets['WSPBasicArrayOps'],2,1,1,1)
         # self.create_TA_UI() #Trace Analysis
         # self.create_IPPM_UI() #Isolated Position, Pulse Map
         # self.create_IPSS_UI() #Isolated Position, Single Spin
@@ -173,7 +173,7 @@ class App(QMainWindow):
         '''
         self.WSPWidgets['WSP1Dplot'].updateLayout(self.XP)
         self.WSPWidgets['WSP1Dplot'].initial_values(self.filePreferences['ExperimentType'], None)
-        self.WSPWidgets['WSPTruncateArray'].updateLayout(self.XP)
+        self.WSPWidgets['WSPBasicArrayOps'].updateLayout(self.XP)
 
     def resetXP(self):
         self.XP = MultiDimExperiment.MultiDimExperiment()

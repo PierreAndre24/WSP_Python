@@ -8,7 +8,7 @@ import numpy as np
 from gui.subGUI_Model import Model
 from libs.array_operations import *
 
-class WSP1Dplot(QWidget):
+class WSP1D2Dplot(QWidget):
     def __init__(self):
         QWidget.__init__(self)
         self.grid = QGridLayout()
@@ -17,8 +17,10 @@ class WSP1Dplot(QWidget):
         self.selWid = {}
         self.footer = {}
         self.FLAG_initialized = False
-        self.FLAG_figure_open = False
+        self.FLAG_figure_1d_open = False
+        self.FLAG_figure_2d_open = False
         self.FLAG_auto_update = False
+        self.FLAG_stack = False
         #self.create_all_widgets()
 
     def add_all_widgets_to_grid(self):
@@ -34,6 +36,8 @@ class WSP1Dplot(QWidget):
                             self.header['stack dimension'].col, 1, 1)
         self.grid.addWidget(self.header['plot 1d button'], 0, \
                             self.header['plot 1d button'].col, 1, 1)
+        self.grid.addWidget(self.header['plot 2d button'], 0, \
+                            self.header['plot 2d button'].col, 1, 1)
         self.grid.addWidget(self.header['auto update'], 0, \
                             self.header['auto update'].col, 1, 1)
         self.header_NofLines = 1
@@ -81,18 +85,24 @@ class WSP1Dplot(QWidget):
             self.header['x axis'] = QLabel('X-axis')
             self.header['x axis'].col = 1
         if 'stack dimension' not in self.header.keys():
-            self.header['stack dimension'] = QLabel('Stack')
+            self.header['stack dimension'] = QLabel('Stack/Y')
             self.header['stack dimension'].col = 2
         if 'plot 1d button' not in self.header.keys():
             self.header['plot 1d button'] = QPushButton("Plot 1D")
             self.header['plot 1d button'].clicked.connect(self.call_Plot1D)
             self.header['plot 1d button'].col = 3
 
+        if 'plot 2d button' not in self.header.keys():
+            self.header['plot 2d button'] = QPushButton("Plot 2D")
+            self.header['plot 2d button'].setEnabled(False)
+            self.header['plot 2d button'].clicked.connect(self.call_Plot2D)
+            self.header['plot 2d button'].col = 4
+
         if 'auto update' not in self.header.keys():
             self.header['auto update'] = QCheckBox("auto update")
             self.header['auto update'].stateChanged.connect(self.call_auto_update)
             self.header['auto update'].setChecked(False)
-            self.header['auto update'].col = 4
+            self.header['auto update'].col = 5
 
     def _create_selection_widgets(self):
         for dim in range(len(self.originalRanges)):
@@ -166,9 +176,10 @@ class WSP1Dplot(QWidget):
                     self.selWid[dim]['stack'].setCheckState(0)
                 self.call_check_widgets()
 
-    def updateLayout(self,XP):
+    def updateLayout(self, XP, WSPPreferences):
         # update the available experiment
         self.XP = XP
+        self.WSPPreferences = WSPPreferences
         self.originalRanges = self.XP.ExperimentalData['dimensions']
         # create the widgets based on the available experiment
         self.create_all_widgets()
@@ -269,6 +280,18 @@ class WSP1Dplot(QWidget):
                         self.selWid[i]['stack'].setChecked(False)
         for i in range(len(self.originalRanges)):
             self.check_isVisible_combobox(i)
+
+        self.check_2d_plotbutton()
+
+    def check_2d_plotbutton(self):
+        self.FLAG_stack = False
+        for k, v in self.selWid.items():
+            if v['stack'].isChecked():
+                self.FLAG_stack = True
+        if self.FLAG_stack:
+            self.header['plot 2d button'].setEnabled(True)
+        else:
+            self.header['plot 2d button'].setEnabled(False)
 
     def check_isVisible_combobox(self,dim):
         '''
@@ -394,13 +417,21 @@ class WSP1Dplot(QWidget):
             arr = np.reshape(arr, (iend - istart + 1, jend - jstart + 1))
             return arr
 
-    def handle_figure_close(self):
-        self.FLAG_figure_open = False
+    def handle_figure_1d_close(self):
+        self.FLAG_figure_1d_open = False
+
+    def handle_figure_2d_close(self):
+        self.FLAG_figure_2d_open = False
 
     def call_Plot1D(self):
-        if not self.FLAG_figure_open:
+        if not self.FLAG_figure_1d_open:
             self.init_Plot1D()
         self.update_Plot1D() # apply only if the figure exists
+
+    def call_Plot2D(self):
+        if not self.FLAG_figure_2d_open:
+            self.init_Plot2D()
+        self.update_Plot2D() # apply only if the figure exists
 
     def call_auto_update(self):
         if self.header['auto update'].isChecked():
@@ -410,10 +441,13 @@ class WSP1Dplot(QWidget):
 
     def handle_auto_update(self):
         if self.FLAG_auto_update:
-            self.update_Plot1D()
+            if self.FLAG_figure_1d_open:
+                self.update_Plot1D()
+            if self.FLAG_figure_2d_open:
+                self.update_Plot2D()
 
     def update_Plot1D(self):
-        if self.FLAG_figure_open:
+        if self.FLAG_figure_1d_open:
             # select data
             Y = self.select_slice(self.XP.ExperimentalData['data'])
             X = np.arange(Y.shape[0])
@@ -425,18 +459,35 @@ class WSP1Dplot(QWidget):
                 line.set_xdata(X)
             self.fig_Plot1D.canvas.draw()
 
+    def update_Plot2D(self):
+        if self.FLAG_figure_2d_open:
+            # select data
+            # Y = self.select_slice(self.XP.ExperimentalData['data'])
+            # X = np.arange(Y.shape[0])
+            z = self.select_slice(self.XP.ExperimentalData['data'])
+            # z = XP.ExperimentalData['data'][qpc,0,:,:,0]
+            self.lines_Plot2D.set_data(z)
+            # draw
+            self.fig_Plot2D.canvas.draw()
+
+
     def init_Plot1D(self):
         plt.ion()
-        self.fig_Plot1D = plt.figure()
-        self.fig_Plot1D.canvas.mpl_connect('close_event', self.handle_figure_close)
-        self.FLAG_figure_open = True
+        self.fig_Plot1D = plt.figure(1)
+        self.fig_Plot1D.canvas.mpl_connect('close_event', self.handle_figure_1d_close)
+        self.FLAG_figure_1d_open = True
         self.ax_Plot1D = self.fig_Plot1D.add_subplot(1, 1, 1)
-        # select data
-        # sl, rs = self.select_slice()
-        # Y = np.reshape(self.XP.ExperimentalData['data'][sl],rs)
         Y = self.select_slice(self.XP.ExperimentalData['data'])
-        # X = np.arange(Y.shape[0])
         self.lines_Plot1D = self.ax_Plot1D.plot(Y)
-        #self.lines_Plot1D.set_xdata(X)
-        # plt.plot(Y)
-        # plt.show()
+
+    def init_Plot2D(self):
+        plt.ion()
+        self.fig_Plot2D = plt.figure(2)
+        self.fig_Plot2D.canvas.mpl_connect('close_event', self.handle_figure_2d_close)
+        self.FLAG_figure_2d_open = True
+        self.ax_Plot2D = self.fig_Plot2D.add_subplot(1, 1, 1)
+        z = self.select_slice(self.XP.ExperimentalData['data'])
+        # self.lines_Plot2D = self.ax_Plot2D.plot(Y)
+        self.lines_Plot2D = plt.imshow(z, interpolation='none')
+        plt.clim()   # clamp the color limits
+        plt.title("map of " + self.WSPPreferences['currentFileName'])

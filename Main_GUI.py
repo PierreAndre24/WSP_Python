@@ -10,7 +10,7 @@ from libs.GUI_Preferences import filePreferencesGUI
 import libs.MultiDimExperiment as MultiDimExperiment
 import libs.ExperimentFileManager as ExperimentFileManager
 from gui.WSPBasicArrayOps import WSPBasicArrayOps
-from gui.WSP1Dplot import WSP1Dplot
+from gui.WSP1D2Dplot import WSP1D2Dplot
 
 class App(QMainWindow):
     '''
@@ -141,10 +141,10 @@ class App(QMainWindow):
         # Create widgets
         self.WSPWidgets = {}
         self.WSPWidgets['WSPBasicArrayOps'] = WSPBasicArrayOps()
-        self.WSPWidgets['WSP1Dplot'] = WSP1Dplot()
+        self.WSPWidgets['WSP1D2Dplot'] = WSP1D2Dplot()
 
         # Position widgets
-        self.mainGL.addWidget(self.WSPWidgets['WSP1Dplot'],1,1,1,1)
+        self.mainGL.addWidget(self.WSPWidgets['WSP1D2Dplot'],1,1,1,1)
         self.mainGL.addWidget(self.WSPWidgets['WSPBasicArrayOps'],2,1,1,1)
         # self.create_TA_UI() #Trace Analysis
         # self.create_IPPM_UI() #Isolated Position, Pulse Map
@@ -171,8 +171,8 @@ class App(QMainWindow):
         Refresh elements of all subGUIs.
         Todo:
         '''
-        self.WSPWidgets['WSP1Dplot'].updateLayout(self.XP)
-        self.WSPWidgets['WSP1Dplot'].initial_values(self.filePreferences['ExperimentType'], None)
+        self.WSPWidgets['WSP1D2Dplot'].updateLayout(self.XP, self.WSPPreferences)
+        self.WSPWidgets['WSP1D2Dplot'].initial_values(self.filePreferences['ExperimentType'], None)
         self.WSPWidgets['WSPBasicArrayOps'].updateLayout(self.XP)
 
     def resetXP(self):

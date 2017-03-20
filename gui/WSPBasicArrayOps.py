@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from gui.subGUI_Model import Model
 from libs.array_operations import *
+import libs.XP_Operations as XPops
 
 class WSPBasicArrayOps(QWidget):
     def __init__(self):
@@ -27,7 +28,10 @@ class WSPBasicArrayOps(QWidget):
 
     def add_header_widgets_to_grid(self):
         for k, v in self.header.items():
-            self.grid.addWidget(v, 0, v.col, 1, 1)
+            if isinstance(v.col, int):
+                self.grid.addWidget(v, 0, v.col, 1, 1)
+            elif isinstance(v.col, list):
+                self.grid.addWidget(v, 0, v.col[0], 1, v.col[1])
         self.header_NofLines = 1
 
     def add_selection_widgets_to_grid(self):
@@ -48,21 +52,25 @@ class WSPBasicArrayOps(QWidget):
             self.header['apply'] = QPushButton("Apply")
             self.header['apply'].clicked.connect(self.call_Apply)
             self.header['apply'].col = 1
-        if 'FFT' not in self.header.keys():
-            self.header['FFT'] = QLabel('FFT')
-            self.header['FFT'].col = 3
-        if 'FFT filter' not in self.header.keys():
-            self.header['FFT filter'] = QLabel('FFT filt.')
-            self.header['FFT filter'].col = 4
+        if 'auto save' not in self.header.keys():
+            self.header['auto save'] = QCheckBox('auto save')
+            self.header['auto save'].stateChanged.connect(self.call_auto_save)
+            self.header['auto save'].col = 2
         if 'derivative' not in self.header.keys():
             self.header['derivative'] = QLabel('Deriv.')
-            self.header['derivative'].col = 5
+            self.header['derivative'].col = 3
+        if 'FFT filter' not in self.header.keys():
+            self.header['FFT filter'] = QLabel('FFT filt. \n(unif. / not)')
+            self.header['FFT filter'].col = [4,2]
         if 'smooth' not in self.header.keys():
             self.header['smooth'] = QLabel('Smooth')
             self.header['smooth'].col = 6
         if 'average' not in self.header.keys():
             self.header['average'] = QLabel('Average')
             self.header['average'].col = 7
+        if 'FFT' not in self.header.keys():
+            self.header['FFT'] = QLabel('FFT')
+            self.header['FFT'].col = 8
 
     def _create_selection_widgets(self):
         for dim in range(len(self.originalRanges)):
@@ -90,26 +98,26 @@ class WSPBasicArrayOps(QWidget):
                 self.selWid[dim]['combo end'].element = 'combo_end'
                 self.selWid[dim]['combo end'].col = 2
 
-                self.selWid[dim]['FFT'] = QCheckBox()
-                self.selWid[dim]['FFT'].stateChanged.connect(self.call_selection_update)
-                self.selWid[dim]['FFT'].dim = dim
-                self.selWid[dim]['FFT'].element = 'FFT'
-                self.selWid[dim]['FFT'].col = 3
-
-                self.selWid[dim]['FFT filter'] = QCheckBox()
-                self.selWid[dim]['FFT filter'].stateChanged.connect(self.call_selection_update)
-                self.selWid[dim]['FFT filter'].dim = dim
-                self.selWid[dim]['FFT filter'].element = 'FFT filter'
-                self.selWid[dim]['FFT filter'].col = 4
-
                 self.selWid[dim]['derivative'] = QCheckBox()
                 self.selWid[dim]['derivative'].stateChanged.connect(self.call_selection_update)
                 self.selWid[dim]['derivative'].dim = dim
                 self.selWid[dim]['derivative'].element = 'derivative'
-                self.selWid[dim]['derivative'].col = 5
+                self.selWid[dim]['derivative'].col = 3
+
+                self.selWid[dim]['FFT filter unif'] = QCheckBox()
+                self.selWid[dim]['FFT filter unif'].stateChanged.connect(self.call_selection_update)
+                self.selWid[dim]['FFT filter unif'].dim = dim
+                self.selWid[dim]['FFT filter unif'].element = 'FFT filter unif'
+                self.selWid[dim]['FFT filter unif'].col = 4
+
+                self.selWid[dim]['FFT filter not unif'] = QCheckBox()
+                self.selWid[dim]['FFT filter not unif'].stateChanged.connect(self.call_selection_update)
+                self.selWid[dim]['FFT filter not unif'].dim = dim
+                self.selWid[dim]['FFT filter not unif'].element = 'FFT filter not unif'
+                self.selWid[dim]['FFT filter not unif'].col = 5
 
                 self.selWid[dim]['smooth'] = QCheckBox()
-                self.selWid[dim]['smooth'].stateChanged.connect(self.call_selection_update)
+                self.selWid[dim]['smooth'].stateChanged.connect(self.call_smooth)
                 self.selWid[dim]['smooth'].dim = dim
                 self.selWid[dim]['smooth'].element = 'smooth'
                 self.selWid[dim]['smooth'].col = 6
@@ -119,6 +127,12 @@ class WSPBasicArrayOps(QWidget):
                 self.selWid[dim]['average'].dim = dim
                 self.selWid[dim]['average'].element = 'average'
                 self.selWid[dim]['average'].col = 7
+
+                self.selWid[dim]['FFT'] = QCheckBox()
+                self.selWid[dim]['FFT'].stateChanged.connect(self.call_selection_update)
+                self.selWid[dim]['FFT'].dim = dim
+                self.selWid[dim]['FFT'].element = 'FFT'
+                self.selWid[dim]['FFT'].col = 8
 
     def initial_values(self, ExperimentType, values=None):
         if values == None:
@@ -145,15 +159,18 @@ class WSPBasicArrayOps(QWidget):
 
     def remove_all_widgets_from_grid(self):
         if self.header != {}:
-            for w in self.header.keys():
-                self.grid.removeWidget(self.header[w])
-        if self.footer != {}:
-            for w in self.footer.keys():
-                self.grid.removeWidget(self.footer[w])
+            for k, v in self.header.items():
+                self.grid.removeWidget(v)
         if self.selWid != {}:
-            for d in self.selWid.keys():
-                for w in self.selWid[d].keys():
-                    self.grid.removeWidget(self.selWid[d][w])
+            for k1, v1 in self.selWid.items():
+                for k2, v2 in v1.items():
+                    self.grid.removeWidget(v2)
+
+    def call_auto_save(self):
+        if self.header['auto save'].isChecked():
+            self.FLAG_auto_save = True
+        else:
+            self.FLAG_auto_save = False
 
     def call_selection_update(self):
         element = self.sender().element
@@ -161,20 +178,13 @@ class WSPBasicArrayOps(QWidget):
         # wait for XP loaded and widget initialized
         # if (self.originalRanges[0]) != 0 and len(self.selectionWidget) == len():
         if self.FLAG_initialized:
-            if element == 'xaxis_checkbox':
-                self.check_xaxis_checkbox(dim)
+            pass
 
-            if element == 'stack_checkbox':
-                self.check_stack_checkbox(dim)
-
-            if  (element == 'left_arrow') or (element == 'right_arrow'):
-                self.call_LR_arrow_clicked(element, dim)
-                self.check_LR_arrow(dim)
-
-            # if (element == 'combo_start') or (element == 'combo_end'):
-            #     self.check_combo_SE(dim)
-
-        self.handle_auto_update()
+    def call_smooth(self):
+        element = self.sender().element
+        dim = self.sender().dim
+        if self.selWid[dim]['smooth'].isChecked():
+            XPops.smooth(self.XP, 'flat', 2)
 
     def call_check_widgets(self):
         '''
@@ -184,7 +194,21 @@ class WSPBasicArrayOps(QWidget):
         pass
 
     def call_Apply(self):
-        pass
+        # first truncate array
+        XPops.truncate(self.XP, current_slice)
+
+        # apply all operations
+        for dim in range(len(self.originalRanges)):
+            if self.selWid[dim]['FFT'].isChecked():
+                XPops.FFT(self.XP, dim)
+            if self.selWid[dim]['derivative'].isChecked():
+                XPops.derivative(self.XP, dim, order)
+            if self.selWid[dim]['FFT filter unif'].isChecked():
+                XPops.FFTfilter(self.XP, fftfilters, dim)
+            if self.selWid[dim]['smooth'].isChecked():
+                XPops.smooth(self.XP,smooth_type, dim)
+            if self.selWid[dim]['average'].isChecked():
+                XPops.average(self.XP, dim)
 
     def select_slice(self, array):
 

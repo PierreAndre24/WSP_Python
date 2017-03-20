@@ -556,7 +556,8 @@ class LVM_IO:
             self.currentline = self.filein.readline()
             self.currentline = string.split(self.currentline,self.newline)
         self.sweep_length = 0
-        while self.currentline[0] != '':
+        # while self.currentline[0] != '':
+        while self.currentline[0] != '' or self.currentline[0] != '/' or self.currentline[0] != '\\':
             self.sweep_length += 1
             self.currentline = self.filein.readline()
             self.currentline = string.split(self.currentline,self.newline)

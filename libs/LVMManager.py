@@ -67,7 +67,7 @@ class LVM_IO:
         # Load sweep, step and step2
 
         # load the file
-        self.filein = open(filepath + os.sep + filename,'r')
+        self.filein = open(filepath + os.sep + filename,'rb')
         self.filein_txt = self.filein.readlines()
         self.filein.close()
 
@@ -273,9 +273,9 @@ class LVM_IO:
 
     def Read_FastSequence(self, filepath, filename, XP, read_multiple_files):
         if read_multiple_files:
-            self.filein = open(filepath + os.sep + filename[:-9] + '00000.fstsq','r')
+            self.filein = open(filepath + os.sep + filename[:-9] + '00000.fstsq','rb')
         else:
-            self.filein = open(filepath + os.sep + filename[:-4] + '.fstsq','r')
+            self.filein = open(filepath + os.sep + filename[:-4] + '.fstsq','rb')
         self.filein_txt = self.filein.readlines()
         self.filein.close()
 
@@ -416,7 +416,7 @@ class LVM_IO:
                 elif string.split(self.currentline,':')[1][:4] == ' jum':
                     # check if the fast sequence in the ramp mode ends with Trig1: F
                     self.currentline = re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*", self.currentline)
-                    if  int(self.currentline[0]) == int(self.currentline[1]):
+                    if  int(self.currentline[0])-1 == int(self.currentline[1]):
                         # end of the fastsequence due to the infinite loop
                         #self.FLAG_finite_fastsequence = True #not necessary
                         self.FLAG_end_of_Fastsequence = True
@@ -432,7 +432,7 @@ class LVM_IO:
         #     self.currentlinenumber += 1
 
     def Read_header(self, filepath, filename, XP, read_multiple_files):
-        self.filein = open(filepath + os.sep + filename,'r')
+        self.filein = open(filepath + os.sep + filename,'rb')
         self._read_header_size()
         self.filein.seek(0) # Go back to the begin of the file
 
@@ -546,7 +546,7 @@ class LVM_IO:
         # As the different labview programs gives more or less wrong
         # sweep dimensions, we have to check it.
         # In order to do so, we read the first sweep manually.
-        self.filein = open(filepath + os.sep + filename,'r')
+        self.filein = open(filepath + os.sep + filename,'rb')
         for i in range(self._header_size):
             self.filein.readline() # Go back to the end of the header
         # Finf the begining of the scan
@@ -556,8 +556,8 @@ class LVM_IO:
             self.currentline = self.filein.readline()
             self.currentline = string.split(self.currentline,self.newline)
         self.sweep_length = 0
-        # while self.currentline[0] != '':
-        while self.currentline[0] != '' or self.currentline[0] != '/' or self.currentline[0] != '\\':
+        while self.currentline[0] != '':
+        # while self.currentline[0] != '' or self.currentline[0] != '/' or self.currentline[0] != '\\':
             self.sweep_length += 1
             self.currentline = self.filein.readline()
             self.currentline = string.split(self.currentline,self.newline)

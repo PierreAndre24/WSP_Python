@@ -416,7 +416,7 @@ class LVM_IO:
                 elif string.split(self.currentline,':')[1][:4] == ' jum':
                     # check if the fast sequence in the ramp mode ends with Trig1: F
                     self.currentline = re.findall("[-+]?\d+[\.]?\d*[eE]?[-+]?\d*", self.currentline)
-                    if  int(self.currentline[0])-1 == int(self.currentline[1]):
+                    if  int(self.currentline[0]) == int(self.currentline[1]):
                         # end of the fastsequence due to the infinite loop
                         #self.FLAG_finite_fastsequence = True #not necessary
                         self.FLAG_end_of_Fastsequence = True
